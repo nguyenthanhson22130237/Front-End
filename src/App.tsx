@@ -1,17 +1,23 @@
 import { useEffect } from "react";
 import { wsService } from "./services/websocket";
-import { RegisterForm } from "./components/RegisterForm";
-import { LoginForm } from "./components/LoginForm";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import LoginPage from "./pages/LoginPage";
+// @ts-ignore
+import RegisterPage from "./pages/RegisterPage";
+
 const App = () => {
     useEffect(() => {
         wsService.connect();
     }, []);
 
     return (
-        <div>
-            <LoginForm/>
-
-        </div>
+        <BrowserRouter>
+            <Routes>
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
+                <Route path="*" element={<Navigate to="/register" />} />
+            </Routes>
+        </BrowserRouter>
     );
 };
 
