@@ -15,9 +15,14 @@ const authSlice = createSlice({
     reducers: {
         setUser: (state, action: PayloadAction<User>) => {
             state.user = action.payload;
+        },
+        logout: (state) => {
+            state.user = null;
+            localStorage.removeItem("RE_LOGIN_CODE");
         }
     },
 });
 
-export const { setUser } = authSlice.actions;
+export const { setUser, logout } = authSlice.actions;
 export default authSlice.reducer;
+
