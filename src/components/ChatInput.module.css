@@ -1,0 +1,28 @@
+.wrapper {
+    display: flex;
+    gap: 8px;
+    padding: 10px;
+    border-top: 1px solid #ddd;
+}
+
+.to {
+    width: 120px;
+    padding: 8px;
+}
+
+.input {
+    flex: 1;
+    padding: 8px;
+}
+
+.button {
+    background: #4caf50;
+    color: white;
+    border: none;
+    padding: 0 16px;
+    cursor: pointer;
+}
+
+.button:hover {
+    background: #43a047;
+}

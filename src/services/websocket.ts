@@ -85,7 +85,7 @@ class WebSocketService {
              onSuccess?: (msg: string) => void,
              onError?: (err: string) => void) {
         if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
-            console.error("WebSocket not ready.");
+            console.error("WebSocket not connected");
             return;
         }
         this.onRegisterSuccess = onSuccess;
@@ -139,6 +139,27 @@ class WebSocketService {
                 event: "RE_LOGIN",
                 data: {
                     RE_LOGIN_CODE: code
+                }
+            }
+        };
+
+        this.socket.send(JSON.stringify(payload));
+    }
+
+    sendChat(type: "people" | "group", to: string, mes: string) {
+        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+            console.error("WebSocket not connected");
+            return;
+        }
+
+        const payload = {
+            action: "onchat",
+            data: {
+                event: "SEND_CHAT",
+                data: {
+                    type,
+                    to,
+                    mes
                 }
             }
         };
