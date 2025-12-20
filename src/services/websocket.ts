@@ -7,6 +7,8 @@ class WebSocketService {
     private socket: WebSocket | null = null;
     private reconnectTimer: any = null;
     private isManualLogin = false;
+    private onRegisterSuccess?: (msg: string) => void;
+    private onRegisterError?: (err: string) => void;
 
     connect() {
         if (this.socket) return;
@@ -29,14 +31,12 @@ class WebSocketService {
             console.log("WS RECV:", data);
 
             // REGISTER OK
-            if (data.event === "REGISTER" && data.status === "success") {
-                store.dispatch(
-                    setUser({
-                        username: data.data?.user || "",
-                        authenticated: true
-                    })
-                );
-                console.log("Đăng ký thành công");
+            if (data.event === "REGISTER") {
+                if (data.status === "success") {
+                    this.onRegisterSuccess?.("Đăng ký thành công");
+                } else {
+                    this.onRegisterError?.("Đăng ký thất bại");
+                }
             }
 
             // LOGIN OK
@@ -80,12 +80,16 @@ class WebSocketService {
         };
     }
 
-    register(username: string, password: string) {
+    register(username: string,
+             password: string,
+             onSuccess?: (msg: string) => void,
+             onError?: (err: string) => void) {
         if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
-            console.error("WebSocket not ready.");
+            console.error("WebSocket not connected");
             return;
         }
-
+        this.onRegisterSuccess = onSuccess;
+        this.onRegisterError = onError;
         const payload = {
             action: "onchat",
             data: {
@@ -135,6 +139,27 @@ class WebSocketService {
                 event: "RE_LOGIN",
                 data: {
                     RE_LOGIN_CODE: code
+                }
+            }
+        };
+
+        this.socket.send(JSON.stringify(payload));
+    }
+
+    sendChat(type: "people" | "group", to: string, mes: string) {
+        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+            console.error("WebSocket not connected");
+            return;
+        }
+
+        const payload = {
+            action: "onchat",
+            data: {
+                event: "SEND_CHAT",
+                data: {
+                    type,
+                    to,
+                    mes
                 }
             }
         };
