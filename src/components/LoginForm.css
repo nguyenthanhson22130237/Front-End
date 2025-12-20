@@ -1,0 +1,122 @@
+/* Reset cơ bản để đảm bảo hiển thị đúng */
+* {
+    box-sizing: border-box;
+}
+
+/* Wrapper bao quanh để căn giữa màn hình */
+.login-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f3f4f6; /* Màu nền xám nhẹ tổng thể */
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Thẻ Card chứa form */
+.login-card {
+    background: #ffffff;
+    width: 100%;
+    max-width: 450px; /* Độ rộng tối đa giống ảnh */
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); /* Đổ bóng nhẹ */
+}
+
+/* Tiêu đề Đăng nhập */
+.login-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #333;
+    text-align: center;
+    margin-bottom: 30px;
+    margin-top: 0;
+}
+
+/* Nhóm input (Label + Input) */
+.form-group {
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+/* Label: Email, Mật khẩu */
+.form-label {
+    font-size: 16px;
+    font-weight: 700;
+    color: #000;
+    margin-bottom: 8px;
+}
+
+/* Input field */
+.form-input {
+    width: 100%;
+    padding: 12px 15px;
+    font-size: 14px;
+    border: 1px solid #d1d5db; /* Viền xám nhạt */
+    border-radius: 6px;
+    outline: none;
+    transition: border-color 0.2s;
+    color: #333;
+}
+
+.form-input:focus {
+    border-color: #3b82f6; /* Đổi màu viền khi focus */
+}
+
+.form-input::placeholder {
+    color: #9ca3af;
+}
+
+/* Quên mật khẩu */
+.forgot-password {
+    text-align: right;
+    margin-bottom: 25px;
+}
+
+.forgot-password a {
+    color: #3b82f6;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* Nút Đăng nhập */
+.login-btn {
+    width: 100%;
+    padding: 12px;
+    background-color: #3b82f6; /* Màu xanh dương giống ảnh */
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.login-btn:hover {
+    background-color: #2563eb; /* Màu đậm hơn khi hover */
+}
+
+/* Link đăng ký ở dưới cùng */
+.register-link {
+    margin-top: 25px;
+    text-align: center;
+    font-size: 15px;
+    color: #000;
+}
+
+.register-link a {
+    color: #3b82f6;
+    text-decoration: none;
+    font-weight: 600;
+    margin-left: 5px;
+}
+
+.login-success {
+    font-size: 18px;
+    color: green;
+    font-weight: bold;
+}
