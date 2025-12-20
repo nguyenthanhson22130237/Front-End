@@ -6,167 +6,210 @@ import { setUser } from "../features/auth/authSlice";
 class WebSocketService {
     private socket: WebSocket | null = null;
     private reconnectTimer: any = null;
-    private isManualLogin = false;
     private onRegisterSuccess?: (msg: string) => void;
     private onRegisterError?: (err: string) => void;
+
+    private isLoggedIn = false;
+    private isManualLogin = false;
+    private tempRegPassword = "";
+
+    private waitForOpen(socket: WebSocket, callback: () => void) {
+        if (socket.readyState === WebSocket.OPEN) {
+            callback();
+            return;
+        }
+        const check = setInterval(() => {
+            if (socket.readyState === WebSocket.OPEN) {
+                callback();
+                clearInterval(check);
+            } else if (socket.readyState === WebSocket.CLOSED) {
+                clearInterval(check);
+            }
+        }, 50);
+    }
 
     connect() {
         if (this.socket) return;
 
         this.socket = new WebSocket("wss://chat.longapp.site/chat/chat");
+
         this.socket.onopen = () => {
-            console.log("WebSocket connected.");
+            console.log("[WS] Connected");
 
-            const reloginCode = localStorage.getItem("RE_LOGIN_CODE");
-            if (reloginCode && !this.isManualLogin) {
-                this.reLogin(reloginCode);
+            if (this.isManualLogin) return;
+
+            // Auto Re-login logic
+            const code = localStorage.getItem("RE_LOGIN_CODE");
+            const user = localStorage.getItem("USERNAME");
+
+            if (code && user && !this.isLoggedIn) {
+                this.reLogin(code);
             }
-
-            this.isManualLogin = false;
         };
 
-
         this.socket.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            console.log("WS RECV:", data);
+            let res;
+            try {
+                res = JSON.parse(event.data);
+            } catch (e) {
+                return;
+            }
 
-            // REGISTER OK
-            if (data.event === "REGISTER") {
-                if (data.status === "success") {
-                    this.onRegisterSuccess?.("Đăng ký thành công");
+            // Handle Register
+            if (res.event === "REGISTER") {
+                if (res.status === "success") {
+                    const username = localStorage.getItem("USERNAME");
+                    if (username && this.tempRegPassword) {
+                        this.login(username, this.tempRegPassword);
+                        this.tempRegPassword = "";
+                    } else {
+                        alert("Đăng ký thành công! Vui lòng đăng nhập.");
+                    }
+                    if (this.onRegisterSuccess) this.onRegisterSuccess(res.mes);
                 } else {
-                    this.onRegisterError?.("Đăng ký thất bại");
+                    alert(res.mes || "Đăng ký thất bại");
+                    this.isManualLogin = false;
+                    if (this.onRegisterError) this.onRegisterError(res.mes);
                 }
+                return;
             }
 
-            // LOGIN OK
-            if (data.event === "LOGIN" && data.status === "success") {
-                localStorage.setItem("RE_LOGIN_CODE", data.data.RE_LOGIN_CODE);
+            // Handle Login
+            if (res.event === "LOGIN" && res.status === "success") {
+                localStorage.setItem("RE_LOGIN_CODE", res.data.RE_LOGIN_CODE);
+                this.isLoggedIn = true;
+                this.isManualLogin = false;
 
-                store.dispatch(
-                    setUser({
-                        username: data.data?.user || "",
-                        authenticated: true
-                    })
-                );
-
-                console.log("Login thành công");
+                store.dispatch(setUser({
+                    username: localStorage.getItem("USERNAME") || "Unknown",
+                    authenticated: true
+                }));
+                return;
             }
 
-            // RE_LOGIN OK
-            if (data.event === "RE_LOGIN" && data.status === "success") {
-                store.dispatch(
-                    setUser({
-                        username: data.data?.user || "",
-                        authenticated: true
-                    })
-                );
+            // Handle Re-Login
+            if (res.event === "RE_LOGIN" && res.status === "success") {
+                this.isLoggedIn = true;
+                store.dispatch(setUser({
+                    username: localStorage.getItem("USERNAME") || "Unknown",
+                    authenticated: true
+                }));
+                return;
+            }
 
-                console.log("Re-login thành công");
+            // Error Handling
+            if (res.status === "error") {
+                console.warn("[WS] Error:", res.mes);
+                if (res.mes === "You are already logged in") {
+                    alert("Tài khoản đang được đăng nhập ở nơi khác.");
+                } else {
+                    alert(res.mes);
+                }
             }
         };
 
         this.socket.onerror = (err) => {
-            console.error("WebSocket error:", err);
+            console.error("[WS] Error", err);
         };
 
         this.socket.onclose = () => {
-            console.log("WebSocket disconnected.");
+            console.log("[WS] Disconnected");
             this.socket = null;
+            this.isLoggedIn = false;
+
+            clearTimeout(this.reconnectTimer);
             this.reconnectTimer = setTimeout(() => {
                 this.connect();
             }, 1000);
-
         };
     }
 
-    register(username: string,
-             password: string,
-             onSuccess?: (msg: string) => void,
-             onError?: (err: string) => void) {
-        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
-            console.error("WebSocket not connected");
-            return;
-        }
-        this.onRegisterSuccess = onSuccess;
-        this.onRegisterError = onError;
-        const payload = {
-            action: "onchat",
-            data: {
-                event: "REGISTER",
-                data: {
-                    user: username,
-                    pass: password
-                }
-            }
-        };
-
-        this.socket.send(JSON.stringify(payload));
-    }
     login(username: string, password: string) {
-        this.isManualLogin = true;
+        if (this.isLoggedIn) return;
 
+        this.isManualLogin = true;
+        this.isLoggedIn = false;
+
+        localStorage.setItem("USERNAME", username);
         localStorage.removeItem("RE_LOGIN_CODE");
 
         this.connect();
 
-        const payload = {
+        const payload = JSON.stringify({
             action: "onchat",
             data: {
                 event: "LOGIN",
-                data: {
-                    user: username,
-                    pass: password
-                }
+                data: { user: username, pass: password }
+            }
+        });
+
+        if (this.socket) {
+            this.waitForOpen(this.socket, () => {
+                this.socket?.send(payload);
+            });
+        }
+    }
+
+    reLogin(code: string) {
+        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
+
+        const username = localStorage.getItem("USERNAME");
+        if (!username || !code) return;
+
+        const payload = JSON.stringify({
+            action: "onchat",
+            data: {
+                event: "RE_LOGIN",
+                data: { user: username, code: code }
+            }
+        });
+
+        this.socket.send(payload);
+    }
+
+    register(username: string, password: string, onSuccess?: (msg: string) => void, onError?: (err: string) => void) {
+        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+            // Force connect if not open, but better to handle UI state
+            this.connect();
+        }
+
+        this.onRegisterSuccess = onSuccess;
+        this.onRegisterError = onError;
+
+        // Save for auto-login
+        this.tempRegPassword = password;
+        localStorage.setItem("USERNAME", username);
+
+        const payload = {
+            action: "onchat",
+            data: {
+                event: "REGISTER",
+                data: { user: username, pass: password }
             }
         };
 
-        const waitForOpen = setInterval(() => {
-            if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-                this.socket.send(JSON.stringify(payload));
-                clearInterval(waitForOpen);
-            }
-        }, 50);
+        if (this.socket) {
+            this.waitForOpen(this.socket, () => {
+                this.socket?.send(JSON.stringify(payload));
+            });
+        }
     }
 
-
-    reLogin(code: string) {
+    sendChat(type: "people" | "group", to: string, mes: string) {
         if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
 
         const payload = {
             action: "onchat",
             data: {
-                event: "RE_LOGIN",
-                data: {
-                    RE_LOGIN_CODE: code
-                }
-            }
-        };
-
-        this.socket.send(JSON.stringify(payload));
-    }
-
-    sendChat(type: "people" | "group", to: string, mes: string) {
-        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
-            console.error("WebSocket not connected");
-            return;
-        }
-
-        const payload = {
-            action: "onchat",
-            data: {
                 event: "SEND_CHAT",
-                data: {
-                    type,
-                    to,
-                    mes
-                }
+                data: { type, to, mes }
             }
         };
 
         this.socket.send(JSON.stringify(payload));
     }
-
 }
 
 export const wsService = new WebSocketService();
+// @ts-ignore
+window.chatDebug = wsService;
