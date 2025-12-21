@@ -13,6 +13,31 @@ export const Sidebar = () => {
     const [createMode, setCreateMode] = useState(false);
     const [roomName, setRoomName] = useState("");
 
+    const mockChats = [
+        {
+            id: "room-1",
+            name: "Phòng Java Backend",
+            lastMessage: "API login xong chưa?",
+            time: "10:32",
+            unread: 3,
+        },
+        {
+            id: "room-2",
+            name: "NLU AI Team",
+            lastMessage: "Dataset đã upload rồi nhé",
+            time: "09:15",
+            unread: 0,
+        },
+        {
+            id: "room-3",
+            name: "React Chat App",
+            lastMessage: "UI sidebar nhìn ổn đó 👌",
+            time: "Hôm qua",
+            unread: 1,
+        },
+    ];
+
+
     const createRoom = () => {
         if (!roomName.trim()) {
             alert("Vui lòng nhập tên phòng");
@@ -34,7 +59,7 @@ export const Sidebar = () => {
     return (
         <div className="sidebar">
             <div className="sidebar-header">
-                <h3>NLU Chat</h3>
+                <h3>NLU App Chat</h3>
             </div>
 
             {tab === "room" && (
@@ -66,26 +91,9 @@ export const Sidebar = () => {
 
                     {/* ROOM LIST */}
                     <div className="list">
-                        {rooms.map((r) => (
-                            <div key={r} className="chatItem">
-                                <Users size={16}/>
-                                <span>{r}</span>
-                            </div>
-                        ))}
+
                     </div>
                 </>
-            )}
-
-            {/* PEOPLE TAB */}
-            {tab === "people" && (
-                <div className="list">
-                    {users.map((u) => (
-                        <div key={u.user} className="chatItem">
-                            <Users size={16} />
-                            <span>{u.user}</span>
-                        </div>
-                    ))}
-                </div>
             )}
         </div>
     );
