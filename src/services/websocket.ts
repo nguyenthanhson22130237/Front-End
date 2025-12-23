@@ -30,7 +30,7 @@ class WebSocketService {
     }
 
     connect() {
-        if (this.socket && (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING)) return;
+        if (this.socket) return;
 
         this.socket = new WebSocket("wss://chat.longapp.site/chat/chat");
 
@@ -39,11 +39,11 @@ class WebSocketService {
 
             if (this.isManualLogin) return;
 
+            // Auto Re-login logic
             const code = localStorage.getItem("RE_LOGIN_CODE");
             const user = localStorage.getItem("USERNAME");
 
             if (code && user && !this.isLoggedIn) {
-                console.log("[WS] Attempting auto-login...");
                 this.reLogin(code);
             }
         };
@@ -56,35 +56,26 @@ class WebSocketService {
                 return;
             }
 
-            if (res.status === "error") {
-                console.warn("[WS] Error:", res.mes);
-
-                if (res.event === "RE_LOGIN") {
-                    alert("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
-                    this.logout();
-                    return;
-                }
-
-                if (res.mes === "You are already logged in") {
-                    alert("Tài khoản đang được đăng nhập ở nơi khác.");
+            // Handle Register
+            if (res.event === "REGISTER") {
+                if (res.status === "success") {
+                    const username = localStorage.getItem("USERNAME");
+                    if (username && this.tempRegPassword) {
+                        this.login(username, this.tempRegPassword);
+                        this.tempRegPassword = "";
+                    } else {
+                        alert("Đăng ký thành công! Vui lòng đăng nhập.");
+                    }
+                    if (this.onRegisterSuccess) this.onRegisterSuccess(res.mes);
                 } else {
-                    alert(res.mes);
+                    alert(res.mes || "Đăng ký thất bại");
+                    this.isManualLogin = false;
+                    if (this.onRegisterError) this.onRegisterError(res.mes);
                 }
                 return;
             }
 
-            if (res.event === "REGISTER" && res.status === "success") {
-                const username = localStorage.getItem("USERNAME");
-                if (username && this.tempRegPassword) {
-                    this.login(username, this.tempRegPassword);
-                    this.tempRegPassword = "";
-                } else {
-                    alert("Đăng ký thành công! Vui lòng đăng nhập.");
-                }
-                if (this.onRegisterSuccess) this.onRegisterSuccess(res.mes);
-                return;
-            }
-
+            // Handle Login
             if (res.event === "LOGIN" && res.status === "success") {
                 localStorage.setItem("RE_LOGIN_CODE", res.data.RE_LOGIN_CODE);
                 this.isLoggedIn = true;
@@ -97,6 +88,7 @@ class WebSocketService {
                 return;
             }
 
+            // Handle Re-Login
             if (res.event === "RE_LOGIN" && res.status === "success") {
                 this.isLoggedIn = true;
                 store.dispatch(setUser({
@@ -106,13 +98,30 @@ class WebSocketService {
                 return;
             }
 
+            // Error Handling
+            if (res.status === "error") {
+                console.warn("[WS] Error:", res.mes);
+                if (res.mes === "You are already logged in") {
+                    alert("Tài khoản đang được đăng nhập ở nơi khác.");
+                } else {
+                    alert(res.mes);
+                }
+            }
+
+            //  GET_USER_LIST
             if (res.event === "GET_USER_LIST" && res.status === "success") {
-                store.dispatch(setUsers(res.data));
+                store.dispatch(
+                    setUsers(res.data)
+                );
                 console.log("Lấy danh sách user thành công");
             }
 
-            // ROOM
-            if ((res.event === "CREATE_ROOM" || res.event === "JOIN_ROOM") && res.status === "success") {
+            // ROOM chỉ thêm khi CREATE / JOIN
+            if (res.event === "CREATE_ROOM" && res.status === "success") {
+                store.dispatch(addRooms(res.data.name));
+            }
+
+            if (res.event === "JOIN_ROOM" && res.status === "success") {
                 store.dispatch(addRooms(res.data.name));
             }
         };
@@ -131,24 +140,6 @@ class WebSocketService {
                 this.connect();
             }, 1000);
         };
-    }
-
-    logout() {
-        this.isLoggedIn = false;
-        this.isManualLogin = false;
-
-        localStorage.removeItem("RE_LOGIN_CODE");
-
-        store.dispatch(setUser({
-            username: "",
-            authenticated: false
-        }));
-
-        if (this.socket) {
-            this.socket.close();
-            this.socket = null;
-        }
-        console.log("[WS] Logged out.");
     }
 
     login(username: string, password: string) {
@@ -178,9 +169,7 @@ class WebSocketService {
     }
 
     reLogin(code: string) {
-        if (!this.socket) {
-            this.connect();
-        }
+        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
 
         const username = localStorage.getItem("USERNAME");
         if (!username || !code) return;
@@ -193,24 +182,22 @@ class WebSocketService {
             }
         });
 
-        if (this.socket) {
-            this.waitForOpen(this.socket, () => {
-                this.socket?.send(payload);
-            });
-        }
+        this.socket.send(payload);
     }
 
-    register(username: string,
-             password: string,
-             onSuccess?: (msg: string) => void,
-             onError?: (err: string) => void) {
+    register(username: string, password: string, onSuccess?: (msg: string) => void, onError?: (err: string) => void) {
         if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
-            console.error("WebSocket not ready.");
-            return;
+            // Force connect if not open, but better to handle UI state
+            this.connect();
         }
 
         this.onRegisterSuccess = onSuccess;
         this.onRegisterError = onError;
+
+        // Save for auto-login
+        this.tempRegPassword = password;
+        localStorage.setItem("USERNAME", username);
+
         const payload = {
             action: "onchat",
             data: {
@@ -227,26 +214,18 @@ class WebSocketService {
     }
 
     sendChat(type: "people" | "group", to: string, mes: string) {
-        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
-            console.error("WebSocket not connected");
-            return;
-        }
+        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
 
         const payload = {
             action: "onchat",
             data: {
                 event: "SEND_CHAT",
-                data: {
-                    type,
-                    to,
-                    mes
-                }
+                data: { type, to, mes }
             }
         };
 
         this.socket.send(JSON.stringify(payload));
     }
-
 
     getUserList(){
         if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
