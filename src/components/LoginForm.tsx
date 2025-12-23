@@ -4,7 +4,6 @@ import { useAppSelector } from "../redux/hooks";
 import "./LoginForm.css";
 
 export const LoginForm = () => {
-    // Trong ảnh là Email, nhưng tôi giữ tên biến user để khớp với logic cũ của bạn
     const [user, setUser] = useState("");
     const [pass, setPass] = useState("");
 
@@ -25,7 +24,7 @@ export const LoginForm = () => {
         return (
             <div className="login-wrapper">
                 <div className="login-success">
-                    ✅ Đăng nhập thành công! Xin chào
+                    Đăng nhập thành công! Xin chào
                 </div>
             </div>
         );
