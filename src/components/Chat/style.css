@@ -1,0 +1,125 @@
+/* ChatLayout.css */
+.chat-layout {
+    margin: auto;
+    display: flex;
+    height: 100vh;
+    font-family: Tahoma;
+}
+/* Sidebar.css */
+.sidebar {
+    width: 350px;
+    border-right: 1px solid #e0e0e0;
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+}
+.sidebar-header h3 {
+    margin: 0;
+    font-size: 20px;
+    text-align: center;
+    color: #007a8c;
+    font-weight: bold;
+    padding-top: 20px;
+}
+
+.search {
+    margin: 10px;
+    padding: 10px 15px;
+    border-radius: 20px;
+    border: 1px solid #eee;
+    background: #f0f2f5;
+    outline: none;
+}
+
+.search:focus {
+    border-color: #007a8c;
+    background: #fff;
+}
+.tabs {
+    display: flex;
+    gap: 6px;
+    padding: 0 10px 10px;
+}
+
+.list {
+    flex: 1;
+    overflow-y: auto;
+    border: 1px solid #bac2c8;
+}
+.room-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 10px 10px;
+}
+
+.checkbox {
+    font-size: 14px;
+}
+.btn {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0 10px 10px;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 6px;
+}
+
+.action-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    background: #007a8c;
+    color: white;
+    font-size: 18px;
+}
+
+.action-btn:hover {
+    opacity: 0.85;
+}
+.chatItem {
+    padding: 12px 15px;
+    margin: 4px 8px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.chatItem:hover {
+    background: #f0f7f8;
+}
+
+/* ChatWindow.css */
+.chat-window {
+    width: 550px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+}
+
+.chat-header {
+    height: 70px;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #eee;
+    padding: 0 25px;
+    background: white;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.chat-body {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    background: #f8f9fa;
+}

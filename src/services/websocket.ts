@@ -2,6 +2,7 @@
 import { store } from "../redux/store";
 // @ts-ignore
 import { setUser } from "../features/auth/authSlice";
+import { setUsers, addRooms } from "../features/chat/chatSlice";
 
 class WebSocketService {
     private socket: WebSocket | null = null;
@@ -106,6 +107,23 @@ class WebSocketService {
                     alert(res.mes);
                 }
             }
+
+            //  GET_USER_LIST
+            if (res.event === "GET_USER_LIST" && res.status === "success") {
+                store.dispatch(
+                    setUsers(res.data)
+                );
+                console.log("Lấy danh sách user thành công");
+            }
+
+            // ROOM chỉ thêm khi CREATE / JOIN
+            if (res.event === "CREATE_ROOM" && res.status === "success") {
+                store.dispatch(addRooms(res.data.name));
+            }
+
+            if (res.event === "JOIN_ROOM" && res.status === "success") {
+                store.dispatch(addRooms(res.data.name));
+            }
         };
 
         this.socket.onerror = (err) => {
@@ -207,6 +225,44 @@ class WebSocketService {
         };
 
         this.socket.send(JSON.stringify(payload));
+    }
+
+    getUserList(){
+        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
+
+        const payload = {
+            action: "onchat",
+            data: {
+                event: "GET_USER_LIST"
+            }
+        };
+
+        this.socket.send(JSON.stringify(payload));
+    }
+
+
+    createRoom(name: string) {
+        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
+
+        this.socket.send(JSON.stringify({
+            action: "onchat",
+            data: {
+                event: "CREATE_ROOM",
+                data: { name }
+            }
+        }));
+    }
+
+    joinRoom(name: string) {
+        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
+
+        this.socket.send(JSON.stringify({
+            action: "onchat",
+            data: {
+                event: "JOIN_ROOM",
+                data: { name }
+            }
+        }));
     }
 }
 
