@@ -1,4 +1,6 @@
-import {useState} from "react";
+import {useState, useEffect} from "react";
+import { useAppSelector } from "../redux/hooks";
+import { useNavigate } from "react-router-dom";
 // @ts-ignore
 import styles from "./RegisterForm.module.css";
 import {wsService} from "../services/websocket";
@@ -9,6 +11,14 @@ export const RegisterForm = () => {
     const [password2, setPassword2] = useState("");
     const [message, setMessage] = useState("");
     const [status, setStatus] = useState<"success" | "error" | "">("");
+
+    const auth = useAppSelector((state) => state.auth.user);
+    const navigate = useNavigate();
+    useEffect(() => {
+        if (auth?.authenticated) {
+            navigate("/chat", { replace: true });
+        }
+    }, [auth?.authenticated]);
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -48,11 +58,12 @@ export const RegisterForm = () => {
         <div className={styles.wrapper}>
             <div className={styles.container}>
                 <form onSubmit={submit}>
-                    <h1 className={styles.title}>Đăng ký</h1>
+                    <h2 className={styles.title}>Đăng ký</h2>
 
                     <label className={styles.label}>Username</label>
                     <input
                         className={`${styles.input} ${!username && message ? styles.inputError : ""}`}
+                        placeholder="Nhập username của bạn"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                     />
@@ -61,6 +72,7 @@ export const RegisterForm = () => {
                     <input
                         type="password"
                         className={`${styles.input} ${!password && message ? styles.inputError : ""}`}
+                        placeholder="Nhập mật khẩu của bạn"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                     />
@@ -69,6 +81,7 @@ export const RegisterForm = () => {
                     <input
                         type="password"
                         className={`${styles.input} ${password !== password2 && message ? styles.inputError : ""}`}
+                        placeholder="Xác nhận lại mật khẩu của bạn"
                         value={password2}
                         onChange={(e) => setPassword2(e.target.value)}
                     />

@@ -1,3 +1,4 @@
+import { ChatInput } from "../ChatInput";
 
 export const ChatWindow = () => {
     return (
@@ -9,6 +10,7 @@ export const ChatWindow = () => {
             <div className="chat-body">
 
             </div>
+            <ChatInput />
         </div>
     );
 };
