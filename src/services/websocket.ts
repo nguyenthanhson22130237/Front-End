@@ -51,12 +51,8 @@ class WebSocketService {
         };
 
         this.socket.onmessage = (event) => {
-            let res;
-            try {
-                res = JSON.parse(event.data);
-            } catch {
-                return;
-            }
+            let res= JSON.parse(event.data);
+            console.log("WS:", res);
 
             if (res.event === "REGISTER") {
                 if (res.status === "success") {
@@ -65,13 +61,10 @@ class WebSocketService {
                     if (username && this.tempRegPassword) {
                         this.login(username, this.tempRegPassword);
                         this.tempRegPassword = "";
-                    } else {
-                        alert("Đăng ký thành công! Vui lòng đăng nhập.");
                     }
 
-                    this.onRegisterSuccess?.(res.mes);
+                    this.onRegisterSuccess?.("Đăng ký thành công");
                 } else {
-                    alert(res.mes || "Đăng ký thất bại");
                     this.isManualLogin = false;
                     this.onRegisterError?.(res.mes);
                 }
@@ -90,7 +83,6 @@ class WebSocketService {
                     }));
                 } else {
                     alert(res.mes || "Đăng nhập thất bại");
-                    this.logout();
                 }
                 return;
             }
@@ -268,7 +260,6 @@ class WebSocketService {
         }));
 
         if (this.socket) {
-            this.socket.close();
             this.socket = null;
         }
 
@@ -277,5 +268,3 @@ class WebSocketService {
 }
 
 export const wsService = new WebSocketService();
-// @ts-ignore
-window.chatDebug = wsService;

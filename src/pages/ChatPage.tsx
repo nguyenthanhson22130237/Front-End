@@ -1,9 +1,10 @@
 import { ChatInput } from "../components/ChatInput";
+import { ChatLayout } from "../components/Chat/ChatLayout";
 
 const ChatPage = () => {
     return (
-        <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
-            <ChatInput />
+        <div>
+            <ChatLayout />
         </div>
     );
 };

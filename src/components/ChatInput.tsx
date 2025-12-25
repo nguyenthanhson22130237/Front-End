@@ -7,14 +7,6 @@ export const ChatInput = () => {
     const [message, setMessage] = useState("");
     const [to, setTo] = useState("");
 
-    const reloginCode = localStorage.getItem("RE_LOGIN_CODE");
-    // Re-login tự động khi reload app
-    useEffect(() => {
-        // const reloginCode = localStorage.getItem("RE_LOGIN_CODE");
-        console.log("RE_LOGIN_CODE:", reloginCode);
-
-    }, []);
-
     const send = () => {
         if (!to || !message) return;
 

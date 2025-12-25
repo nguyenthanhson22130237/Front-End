@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { wsService } from "../services/websocket";
 import { useAppSelector } from "../redux/hooks";
+import { useNavigate } from "react-router-dom";
 import "./LoginForm.css";
 
 export const LoginForm = () => {
@@ -8,6 +9,7 @@ export const LoginForm = () => {
     const [pass, setPass] = useState("");
 
     const auth = useAppSelector((state) => state.auth.user);
+    const navigate = useNavigate();
 
     const login = () => {
         wsService.login(user, pass);
@@ -20,15 +22,22 @@ export const LoginForm = () => {
         }
     }, []);
 
-    if (auth?.authenticated) {
-        return (
-            <div className="login-wrapper">
-                <div className="login-success">
-                    Đăng nhập thành công! Xin chào
-                </div>
-            </div>
-        );
-    }
+    useEffect(() => {
+        if (auth?.authenticated) {
+            navigate("/chat", { replace: true });
+        }
+    }, [auth?.authenticated]);
+
+
+    // if (auth?.authenticated) {
+    //     return (
+    //         <div className="login-wrapper">
+    //             <div className="login-success">
+    //                 Đăng nhập thành công! Xin chào
+    //             </div>
+    //         </div>
+    //     );
+    // }
 
     return (
         <div className="login-wrapper">
