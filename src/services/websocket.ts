@@ -2,7 +2,7 @@
 import { store } from "../redux/store";
 // @ts-ignore
 import { setUser } from "../features/auth/authSlice";
-import { setUsers, addRooms } from "../features/chat/chatSlice";
+import { setUsers, addRooms, setMessages } from "../features/chat/chatSlice";
 
 class WebSocketService {
     private socket: WebSocket | null = null;
@@ -116,7 +116,14 @@ class WebSocketService {
                 (res.event === "CREATE_ROOM" || res.event === "JOIN_ROOM") &&
                 res.status === "success"
             ) {
-                store.dispatch(addRooms(res.data.name));
+                store.dispatch(addRooms({name: res.data.name}));
+            }
+
+            if (
+                (res.event === "GET_ROOM_CHAT_MES" || res.event === "GET_PEOPLE_CHAT_MES") &&
+                res.status === "success"
+            ) {
+                store.dispatch(setMessages(res.data));
             }
         };
 
@@ -234,7 +241,10 @@ class WebSocketService {
 
         this.socket.send(JSON.stringify({
             action: "onchat",
-            data: { event: "CREATE_ROOM", data: { name } }
+            data: {
+                event: "CREATE_ROOM",
+                data: { name }
+            }
         }));
     }
 
@@ -243,8 +253,33 @@ class WebSocketService {
 
         this.socket.send(JSON.stringify({
             action: "onchat",
-            data: { event: "JOIN_ROOM", data: { name } }
+            data: {
+                event: "JOIN_ROOM",
+                data: { name }
+            }
         }));
+    }
+
+    getRoomChatMess(name: string, page: number){
+        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
+        this.socket.send(JSON.stringify({
+            action: "onchat",
+            data: {
+                event: "GET_ROOM_CHAT_MES",
+                data: { name, page }
+            }
+        }))
+    }
+
+    getPeopleChatMess(name: string, page: number) {
+        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
+        this.socket.send(JSON.stringify({
+            action: "onchat",
+            data: {
+                event: "GET_PEOPLE_CHAT_MES",
+                data: { name, page }
+            }
+        }))
     }
 
     logout() {
