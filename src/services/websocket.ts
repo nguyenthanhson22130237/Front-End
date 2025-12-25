@@ -2,7 +2,7 @@
 import { store } from "../redux/store";
 // @ts-ignore
 import { setUser } from "../features/auth/authSlice";
-import { setUsers, addRooms, setMessages } from "../features/chat/chatSlice";
+import { setUsers, addRooms, setMessages, setCurrentChat } from "../features/chat/chatSlice";
 
 class WebSocketService {
     private socket: WebSocket | null = null;
@@ -116,7 +116,15 @@ class WebSocketService {
                 (res.event === "CREATE_ROOM" || res.event === "JOIN_ROOM") &&
                 res.status === "success"
             ) {
-                store.dispatch(addRooms({name: res.data.name}));
+                const roomName = res.data.name;
+                store.dispatch(addRooms({name: roomName}));
+
+                store.dispatch(setCurrentChat({
+                    type: "room",
+                    name: roomName
+                }));
+
+                this.getRoomChatMess(roomName, 1);
             }
 
             if (
@@ -215,7 +223,7 @@ class WebSocketService {
         }
     }
 
-    sendChat(type: "people" | "group", to: string, mes: string) {
+    sendChat(type: "people" | "room", to: string, mes: string) {
         if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
 
         this.socket.send(JSON.stringify({
