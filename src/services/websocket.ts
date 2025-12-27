@@ -11,9 +11,11 @@ class WebSocketService {
     private onRegisterSuccess?: (msg: string) => void;
     private onRegisterError?: (err: string) => void;
 
+    private isSilentLogin = false;
     private isLoggedIn = false;
     private isManualLogin = false;
     private tempRegPassword = "";
+    private lastPassword = "";
 
     private waitForOpen(socket: WebSocket, callback: () => void) {
         if (socket.readyState === WebSocket.OPEN) {
@@ -80,9 +82,20 @@ class WebSocketService {
                     store.dispatch(setUser({
                         username: localStorage.getItem("USERNAME") || "",
                         authenticated: true
-                    }));
-                } else {
+                    }));} else {
+                    if (res.mes === "You are already logged in") {
+                        this.isLoggedIn = true;
+                        this.isManualLogin = false;
+
+                        store.dispatch(setUser({
+                            username: localStorage.getItem("USERNAME") || "",
+                            authenticated: true
+                        }));
+                        return;
+                    }
+
                     alert(res.mes || "Đăng nhập thất bại");
+                    this.logout();
                 }
                 return;
             }
@@ -91,22 +104,32 @@ class WebSocketService {
                 if (res.status === "success") {
                     this.isLoggedIn = true;
 
+                    if (res.data?.RE_LOGIN_CODE) {
+                        localStorage.setItem("RE_LOGIN_CODE", res.data.RE_LOGIN_CODE);
+                    }
+
                     store.dispatch(setUser({
                         username: localStorage.getItem("USERNAME") || "",
                         authenticated: true
                     }));
                 } else {
+                    localStorage.removeItem("RE_LOGIN_CODE");
                     alert("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
-                    this.logout();
                 }
                 return;
             }
 
+
             if (res.status === "error") {
-                console.warn("[WS] Error:", res.mes);
-                alert(res.mes || "Có lỗi xảy ra");
+                if (["LOGIN", "RE_LOGIN"].includes(res.event)) {
+                    alert(res.mes || "Lỗi xác thực");
+                    this.logout();
+                } else {
+                    console.warn("[WS warning]", res);
+                }
                 return;
             }
+
 
             if (res.event === "GET_USER_LIST" && res.status === "success") {
                 store.dispatch(setUsers(res.data));
@@ -141,14 +164,18 @@ class WebSocketService {
     }
 
     login(username: string, password: string) {
-        if (this.isLoggedIn) return;
+        this.lastPassword = password;
 
-        this.isManualLogin = true;
+        //  CHỈ CHẶN LOGIN THỦ CÔNG, KHÔNG CHẶN SILENT LOGIN
+        if (this.isLoggedIn && !this.isSilentLogin) return;
+
+        this.isManualLogin = !this.isSilentLogin;
+        this.isSilentLogin = false;
         this.isLoggedIn = false;
-
         localStorage.setItem("USERNAME", username);
-        localStorage.removeItem("RE_LOGIN_CODE");
-
+        if (!this.isSilentLogin) {
+            localStorage.removeItem("RE_LOGIN_CODE");
+        }
         this.connect();
 
         const payload = {
@@ -167,18 +194,20 @@ class WebSocketService {
     }
 
     reLogin(code: string) {
-        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
+        if (!this.socket) return;
 
-        const username = localStorage.getItem("USERNAME");
-        if (!username || !code) return;
+        this.waitForOpen(this.socket, () => {
+            const username = localStorage.getItem("USERNAME");
+            if (!username || !code) return;
 
-        this.socket.send(JSON.stringify({
-            action: "onchat",
-            data: {
-                event: "RE_LOGIN",
-                data: { user: username, code }
-            }
-        }));
+            this.socket?.send(JSON.stringify({
+                action: "onchat",
+                data: {
+                    event: "RE_LOGIN",
+                    data: { user: username, code }
+                }
+            }));
+        });
     }
 
     register(
