@@ -1,9 +1,9 @@
 /* ChatLayout.css */
 .chat-layout {
-    margin: auto;
+    margin: 0 auto;
     display: flex;
     height: 100vh;
-    font-family: Tahoma;
+    font-family: Tahoma, Geneva, Verdana, sans-serif;
 }
 /* Sidebar.css */
 .sidebar {
@@ -12,19 +12,18 @@
     background: #ffffff;
     display: flex;
     flex-direction: column;
-    box-shadow: 2px 0 5px rgba(0,0,0,0.05);
 }
 .sidebar-header h3 {
     margin: 0;
     font-size: 20px;
     text-align: center;
-    color: #007a8c;
+    color: #6b4eff;
     font-weight: bold;
     padding-top: 20px;
 }
 
 .search {
-    margin: 10px;
+    margin: 15px 30px;
     padding: 10px 15px;
     border-radius: 20px;
     border: 1px solid #eee;
@@ -42,11 +41,6 @@
     padding: 0 10px 10px;
 }
 
-.list {
-    flex: 1;
-    overflow-y: auto;
-    border: 1px solid #bac2c8;
-}
 .room-actions {
     display: flex;
     align-items: center;
@@ -56,7 +50,12 @@
 
 .checkbox {
     font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
 }
+
 .btn {
     display: flex;
     justify-content: flex-end;
@@ -68,21 +67,28 @@
     gap: 6px;
 }
 
-.action-btn {
+.action-buttons button{
     width: 36px;
     height: 36px;
     border-radius: 8px;
     border: none;
     cursor: pointer;
-    background: #007a8c;
+    background: #6b4eff;
     color: white;
     font-size: 18px;
 }
 
-.action-btn:hover {
+.action-buttons:hover {
     opacity: 0.85;
 }
-.chatItem {
+
+.list {
+    flex: 1;
+    overflow-y: auto;
+    border: 1px solid #bac2c8;
+}
+
+.list-item {
     padding: 12px 15px;
     margin: 4px 8px;
     border-radius: 10px;
@@ -93,13 +99,12 @@
     gap: 10px;
 }
 
-.chatItem:hover {
+.list-item:hover {
     background: #f0f7f8;
 }
 
 /* ChatWindow.css */
 .chat-window {
-    width: 550px;
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -119,7 +124,41 @@
 
 .chat-body {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
     padding: 20px;
     overflow-y: auto;
     background: #f8f9fa;
+}
+.message {
+    max-width: 50%;
+    width: fit-content;
+    padding: 10px 14px;
+    margin: 5px;
+    border-radius: 14px;
+    background: #e9ecef;
+    color: #333;
+    font-size: 14px;
+    line-height: 1.4;
+    word-break: break-word;
+}
+
+.message.me {
+    align-self: flex-end;
+    background: #6b4eff;
+    color: #fff;
+}
+
+.chat-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-body::-webkit-scrollbar-thumb {
+    background: #cfd8dc;
+    border-radius: 4px;
+}
+
+.chat-body::-webkit-scrollbar-track {
+    background: transparent;
 }
