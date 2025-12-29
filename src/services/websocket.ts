@@ -1,8 +1,6 @@
-// @ts-ignore
 import { store } from "../redux/store";
-// @ts-ignore
 import { setUser } from "../features/auth/authSlice";
-import { setUsers, addRooms, setMessages, setCurrentChat } from "../features/chat/chatSlice";
+import { addHistory, setMessages, setCurrentChat, setHistory} from "../features/chat/chatSlice";
 
 class WebSocketService {
     private socket: WebSocket | null = null;
@@ -14,6 +12,8 @@ class WebSocketService {
     private isLoggedIn = false;
     private isManualLogin = false;
     private tempRegPassword = "";
+
+    private checkUserCallback?: (exists: boolean) => void;
 
     private waitForOpen(socket: WebSocket, callback: () => void) {
         if (socket.readyState === WebSocket.OPEN) {
@@ -81,6 +81,7 @@ class WebSocketService {
                         username: localStorage.getItem("USERNAME") || "",
                         authenticated: true
                     }));
+                    this.getUserList();
                 } else {
                     alert(res.mes || "Đăng nhập thất bại");
                 }
@@ -95,6 +96,7 @@ class WebSocketService {
                         username: localStorage.getItem("USERNAME") || "",
                         authenticated: true
                     }));
+                    this.getUserList();
                 } else {
                     alert("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
                     this.logout();
@@ -102,36 +104,36 @@ class WebSocketService {
                 return;
             }
 
+            if ((res.event === "CREATE_ROOM" || res.event === "JOIN_ROOM") && res.status === "success") {
+                const roomName = res.data.name;
+                if (roomName) {
+                    store.dispatch(addHistory({ name: roomName, type: 1 }));
+                    store.dispatch(setCurrentChat({ name: roomName, type: 1 }));
+                }
+            }
+
+            if (res.event === "CHECK_USER_EXIST") {
+                const exists = res.status === "success" && res.data.status;
+                this.checkUserCallback?.(exists);
+                this.checkUserCallback = undefined;
+            }
+
+            if (
+                (res.event === "GET_PEOPLE_CHAT_MES" ||
+                    res.event === "GET_ROOM_CHAT_MES") &&
+                res.status === "success"
+            ) {
+                store.dispatch(setMessages(res.data || []));
+            }
+
+            if (res.event === "GET_USER_LIST" && res.status === "success") {
+                store.dispatch(setHistory(res.data));
+            }
+
             if (res.status === "error") {
                 console.warn("[WS] Error:", res.mes);
                 alert(res.mes || "Có lỗi xảy ra");
                 return;
-            }
-
-            if (res.event === "GET_USER_LIST" && res.status === "success") {
-                store.dispatch(setUsers(res.data));
-            }
-
-            if (
-                (res.event === "CREATE_ROOM" || res.event === "JOIN_ROOM") &&
-                res.status === "success"
-            ) {
-                const roomName = res.data.name;
-                store.dispatch(addRooms({name: roomName}));
-
-                store.dispatch(setCurrentChat({
-                    type: "room",
-                    name: roomName
-                }));
-
-                this.getRoomChatMess(roomName, 1);
-            }
-
-            if (
-                (res.event === "GET_ROOM_CHAT_MES" || res.event === "GET_PEOPLE_CHAT_MES") &&
-                res.status === "success"
-            ) {
-                store.dispatch(setMessages(res.data));
             }
         };
 
@@ -246,7 +248,6 @@ class WebSocketService {
 
     createRoom(name: string) {
         if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
-
         this.socket.send(JSON.stringify({
             action: "onchat",
             data: {
@@ -258,7 +259,6 @@ class WebSocketService {
 
     joinRoom(name: string) {
         if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
-
         this.socket.send(JSON.stringify({
             action: "onchat",
             data: {
@@ -288,6 +288,16 @@ class WebSocketService {
                 data: { name, page }
             }
         }))
+    }
+
+    checkUserExist(name: string, callback: (exists: boolean) => void) {
+        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
+
+        this.checkUserCallback = callback;
+        this.socket?.send(JSON.stringify({
+            action: "onchat",
+            data: { event: "CHECK_USER_EXIST", data: { user: name } }
+        }));
     }
 
     logout() {

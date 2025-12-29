@@ -1,14 +1,13 @@
-import {LogIn, Plus, Users} from "lucide-react";
+import {LogIn, Plus, Users, User} from "lucide-react";
 import {useAppSelector, useAppDispatch} from "../../redux/hooks";
-import {RootState} from "../../redux/store";
+import {store} from "../../redux/store";
 import {useState} from "react";
 import {wsService} from "../../services/websocket";
-import {setCurrentChat} from "../../features/chat/chatSlice";
+import {setCurrentChat, clearMessages, addHistory } from "../../features/chat/chatSlice";
 
 export const Sidebar = () => {
 
-    const users = useAppSelector((state: RootState) => state.chat.users);
-    const rooms = useAppSelector((state: RootState) => state.chat.rooms);
+    const history = useAppSelector(state => state.chat.history);
 
     const [createMode, setCreateMode] = useState(false);
     const [roomInput, setRoomInput] = useState("");
@@ -16,10 +15,11 @@ export const Sidebar = () => {
 
     const createRoom = () => {
         if (!roomInput.trim()) {
-            alert("Vui lòng nhập tên phòng");
             return;
         }
-        wsService.createRoom(roomInput);
+        const name = roomInput.trim();
+        wsService.createRoom(name);
+
         setRoomInput("");
     };
 
@@ -28,16 +28,31 @@ export const Sidebar = () => {
             alert("Vui lòng nhập tên phòng");
             return;
         }
-        wsService.joinRoom(roomInput);
+        const name = roomInput.trim();
+
+        if (createMode) {
+            wsService.joinRoom(name);
+        } else {
+            wsService.checkUserExist(name, (exists: boolean) => {
+                if (exists) {
+                    store.dispatch(addHistory({ name, type: 0 }));
+                    store.dispatch(setCurrentChat({ name, type: 0 }));
+                    wsService.getPeopleChatMess(name, 1);
+                } else {
+                    alert("User không tồn tại");
+                }
+            });
+        }
         setRoomInput("");
     };
 
-    const openChat = (type: "room" | "people", name: string) => {
-        dispatch(setCurrentChat({type, name}));
-        if (type === "room") {
-            wsService.getRoomChatMess(name, 1);
+    const openChat = (item: { name: string; type: 0 | 1 }) => {
+        dispatch(clearMessages());
+        dispatch(setCurrentChat(item));
+        if (item.type === 1) {
+            wsService.getRoomChatMess(item.name, 1);
         } else {
-            wsService.getPeopleChatMess(name, 1);
+            wsService.getPeopleChatMess(item.name, 1);
         }
     };
 
@@ -73,26 +88,11 @@ export const Sidebar = () => {
                     </div>
                 </div>
 
-                {/* ROOM LIST */}
                 <div className="list">
-                    {rooms.map((room) => (
-                        <div
-                            key={room.name}
-                            onClick={() => openChat("room", room.name)}
-                            className="list-item"
-                        >
-                            <Users size={16}/>
-                            <span>{room.name}</span>
-                        </div>
-                    ))}
-                    {users.map((u) => (
-                        <div
-                            key={u.user}
-                            onClick={() => openChat("people", u.user)}
-                            className="list-item"
-                        >
-                            <Users size={16}/>
-                            <span>{u.user}</span>
+                    {history.map(item => (
+                        <div key={`${item.type}-${item.name}`} className="list-item" onClick={() => openChat(item)}>
+                            {item.type === 1 ? <Users size={16} /> : <User size={16} />}
+                            <span>{item.name}</span>
                         </div>
                     ))}
                 </div>

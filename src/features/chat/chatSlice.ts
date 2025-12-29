@@ -1,51 +1,48 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import {Room, User, Message } from "./chatTypes";
+import { Message, ChatHistoryItem } from "./chatTypes";
 
 //Redux
 interface ChatState{
-    users: User[];
-    rooms: Room[];
-    messages: Message[]; // danh sách tin nhắn
-    currentChat: {
-        type: "room" | "people" | null;
-        name: string;
-    };
+    history: ChatHistoryItem[];
+    messages: Message[];
+    currentChat?: ChatHistoryItem;
 }
 
 const initialState: ChatState = {
-    users: [],
-    rooms: [],
+    history: [],
     messages: [],
-    currentChat: {
-        type: null,
-        name: ""
-    }
-}
+    currentChat: undefined
+};
 
 const chatSlice = createSlice({
     name: "chat",
     initialState,
     reducers: {
-        setUsers: (state, action: PayloadAction<User[]>) => {
-            state.users = action.payload;
+        setHistory: (state, action: PayloadAction<ChatHistoryItem[]>) => {
+            state.history = action.payload;
         },
-        addRooms: (state, action: PayloadAction<Room>) => {
-            if (!state.rooms.some(r => r.name === action.payload.name)) {
-                state.rooms.push(action.payload);
+        addHistory: (state, action: PayloadAction<ChatHistoryItem>) => {
+            const exists = state.history.find(
+                h => h.name === action.payload.name && h.type === action.payload.type
+            );
+            if (!exists) {
+                state.history = [...state.history, action.payload];
             }
         },
         setMessages: (state, action: PayloadAction<Message[]>) => {
             state.messages = action.payload;
         },
-        setCurrentChat: (state, action: PayloadAction<{type: "room" | "people"; name: string}>)=> {
+        setCurrentChat: (state, action: PayloadAction<ChatHistoryItem>) => {
             state.currentChat = action.payload;
-            state.messages = []; // reset khi đổi phòng/người
         },
         appendMessage: (state, action: PayloadAction<Message>) => {
             state.messages.push(action.payload);
-        }
+        },
+        clearMessages: (state) => {
+            state.messages = [];
+        },
     }
 })
 
-export const { setUsers, addRooms, setMessages, setCurrentChat, appendMessage} = chatSlice.actions;
+export const { setHistory, addHistory, setMessages, setCurrentChat, appendMessage, clearMessages} = chatSlice.actions;
 export default chatSlice.reducer;
