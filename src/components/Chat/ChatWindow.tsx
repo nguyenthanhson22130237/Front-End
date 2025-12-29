@@ -12,6 +12,10 @@ export const ChatWindow = () => {
         (state: RootState) => state.auth.user?.username
     );
 
+    if (!currentChat) {
+        return <div className="chat-window"></div>;
+    }
+
     return (
         <div className="chat-window">
             <div className="chat-header">
@@ -21,10 +25,10 @@ export const ChatWindow = () => {
             </div>
 
             <div className="chat-body">
-                {messages.map((m, i) => (
+                {(messages || []).map((m, i) => (
                     <div
                         key={i}
-                        className={`message ${m.from === username ? "me" : ""}`}
+                        className={`message ${m.name === username ? "me" : ""}`}
                     >
                         {m.mes}
                     </div>
