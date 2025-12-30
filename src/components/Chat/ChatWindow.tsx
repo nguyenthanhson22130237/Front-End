@@ -1,7 +1,8 @@
-import { ChatInput } from "../ChatInput";
+import { useEffect, useState } from "react";
+import { ChatInput } from "./ChatInput";
 import { useAppSelector } from "../../redux/hooks";
 import { RootState } from "../../redux/store";
-
+import { ChatMessage } from "./ChatMessage";
 export const ChatWindow = () => {
 
     const { currentChat, messages } = useAppSelector(
@@ -30,7 +31,7 @@ export const ChatWindow = () => {
                         key={i}
                         className={`message ${m.name === username ? "me" : ""}`}
                     >
-                        {m.mes}
+                        <ChatMessage mes={m.mes} />
                     </div>
                 ))}
             </div>

@@ -1,28 +1,28 @@
 import { useState, useEffect } from "react";
-import { wsService } from "../services/websocket";
+import { wsService } from "../../services/websocket";
+import { useAppSelector } from "../../redux/hooks";
+import { ChatHistoryItem } from "../../features/chat/chatTypes"
 // @ts-ignore
 import styles from "./ChatInput.module.css";
 
 export const ChatInput = () => {
     const [message, setMessage] = useState("");
     const [to, setTo] = useState("");
+    const currentChat = useAppSelector(
+        state => state.chat.currentChat);
 
     const send = () => {
-        if (!to || !message) return;
+        // @ts-ignore
+        const type = currentChat.type === 1 ? "room" : "people";
+        // @ts-ignore
+        const to = currentChat.name;
 
-        wsService.sendChat("people", to, message);
+        wsService.sendChat(type, to, message);
         setMessage("");
     };
 
     return (
         <div className={styles.wrapper}>
-            <input
-                className={styles.to}
-                placeholder="Gửi tới (username)"
-                value={to}
-                onChange={(e) => setTo(e.target.value)}
-            />
-
             <input
                 className={styles.input}
                 placeholder="Nhập tin nhắn..."

@@ -162,3 +162,10 @@
 .chat-body::-webkit-scrollbar-track {
     background: transparent;
 }
+
+.message img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+}
