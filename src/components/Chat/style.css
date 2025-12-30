@@ -7,7 +7,7 @@
 }
 /* Sidebar.css */
 .sidebar {
-    width: 350px;
+    width: 300px;
     border-right: 1px solid #e0e0e0;
     background: #ffffff;
     display: flex;
@@ -101,6 +101,20 @@
 
 .list-item:hover {
     background: #f0f7f8;
+}
+
+.dot{
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-left: auto;
+}
+
+.dot.online {
+    background: #34d134;}
+
+.dot.offline {
+    background: #9ca3af;
 }
 
 /* ChatWindow.css */
