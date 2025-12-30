@@ -1,6 +1,6 @@
-import { store } from "../redux/store";
-import { setUser } from "../features/auth/authSlice";
-import { addHistory, setMessages, setCurrentChat, setHistory} from "../features/chat/chatSlice";
+import {store} from "../redux/store";
+import {setUser} from "../features/auth/authSlice";
+import {addHistory, setMessages, setCurrentChat, setHistory, setUserOnline} from "../features/chat/chatSlice";
 
 class WebSocketService {
     private socket: WebSocket | null = null;
@@ -16,6 +16,7 @@ class WebSocketService {
     private lastPassword = "";
 
     private checkUserCallback?: (exists: boolean) => void;
+    private checkingUser: string | null = null;
 
     private waitForOpen(socket: WebSocket, callback: () => void) {
         if (socket.readyState === WebSocket.OPEN) {
@@ -53,7 +54,7 @@ class WebSocketService {
         };
 
         this.socket.onmessage = (event) => {
-            let res= JSON.parse(event.data);
+            let res = JSON.parse(event.data);
             console.log("WS:", res);
 
             if (res.event === "REGISTER") {
@@ -125,8 +126,8 @@ class WebSocketService {
             if ((res.event === "CREATE_ROOM" || res.event === "JOIN_ROOM") && res.status === "success") {
                 const roomName = res.data.name;
                 if (roomName) {
-                    store.dispatch(addHistory({ name: roomName, type: 1 }));
-                    store.dispatch(setCurrentChat({ name: roomName, type: 1 }));
+                    store.dispatch(addHistory({name: roomName, type: 1}));
+                    store.dispatch(setCurrentChat({name: roomName, type: 1}));
                 }
             }
 
@@ -141,11 +142,21 @@ class WebSocketService {
                     res.event === "GET_ROOM_CHAT_MES") &&
                 res.status === "success"
             ) {
-                store.dispatch(setMessages(res.data || []));
+                store.dispatch(setMessages([...(res.data || [])].reverse()));
             }
 
             if (res.event === "GET_USER_LIST" && res.status === "success") {
                 store.dispatch(setHistory(res.data));
+            }
+
+            if (res.event === "CHECK_USER_ONLINE" && res.status === "success") {
+                if (!this.checkingUser) return;
+
+                store.dispatch(setUserOnline({
+                        user: this.checkingUser,
+                        online: Boolean(res.data.status)
+                    })
+                );
             }
 
             if (res.status === "error") {
@@ -198,7 +209,7 @@ class WebSocketService {
             action: "onchat",
             data: {
                 event: "LOGIN",
-                data: { user: username, pass: password }
+                data: {user: username, pass: password}
             }
         };
 
@@ -220,7 +231,7 @@ class WebSocketService {
                 action: "onchat",
                 data: {
                     event: "RE_LOGIN",
-                    data: { user: username, code }
+                    data: {user: username, code}
                 }
             }));
         });
@@ -246,7 +257,7 @@ class WebSocketService {
                     action: "onchat",
                     data: {
                         event: "REGISTER",
-                        data: { user: username, pass: password }
+                        data: {user: username, pass: password}
                     }
                 }));
             });
@@ -260,7 +271,7 @@ class WebSocketService {
             action: "onchat",
             data: {
                 event: "SEND_CHAT",
-                data: { type, to, mes }
+                data: {type, to, mes}
             }
         }));
     }
@@ -270,7 +281,7 @@ class WebSocketService {
 
         this.socket.send(JSON.stringify({
             action: "onchat",
-            data: { event: "GET_USER_LIST" }
+            data: {event: "GET_USER_LIST"}
         }));
     }
 
@@ -280,7 +291,7 @@ class WebSocketService {
             action: "onchat",
             data: {
                 event: "CREATE_ROOM",
-                data: { name }
+                data: {name}
             }
         }));
     }
@@ -291,18 +302,18 @@ class WebSocketService {
             action: "onchat",
             data: {
                 event: "JOIN_ROOM",
-                data: { name }
+                data: {name}
             }
         }));
     }
 
-    getRoomChatMess(name: string, page: number){
+    getRoomChatMess(name: string, page: number) {
         if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
         this.socket.send(JSON.stringify({
             action: "onchat",
             data: {
                 event: "GET_ROOM_CHAT_MES",
-                data: { name, page }
+                data: {name, page}
             }
         }))
     }
@@ -313,7 +324,7 @@ class WebSocketService {
             action: "onchat",
             data: {
                 event: "GET_PEOPLE_CHAT_MES",
-                data: { name, page }
+                data: {name, page}
             }
         }))
     }
@@ -325,7 +336,21 @@ class WebSocketService {
             action: "onchat",
             data: {
                 event: "CHECK_USER_EXIST",
-                data: { user: name } }
+                data: {user: name}
+            }
+        }));
+    }
+
+    checkUserOnline(name: string) {
+        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
+
+        this.checkingUser = name;
+        this.socket.send(JSON.stringify({
+            action: "onchat",
+            data: {
+                event: "CHECK_USER_ONLINE",
+                data: {user: name}
+            }
         }));
     }
 
