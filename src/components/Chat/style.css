@@ -162,3 +162,55 @@
 .chat-body::-webkit-scrollbar-track {
     background: transparent;
 }
+
+.main-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh; /* Chiếm full màn hình */
+    background-color: #f8f9fa;
+}
+
+.top-header {
+    height: 60px;
+    background-color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 30px;
+    border-bottom: 1px solid #e0e0e0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.app-title {
+    color: #007a8c;
+    margin: 0;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.logout-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.logout-btn:hover {
+    background-color: #bb2d3b;
+}
+
+.chat-layout {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    margin: 0 auto;
+    width: 100%;
+}
