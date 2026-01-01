@@ -1,16 +1,18 @@
 import { useEffect, useState } from "react";
 import { isImageUrl } from "../../utils/isImageUrl";
+import { decodeMessage } from "../../utils/decodeMessage";
 
 export const ChatMessage = ({ mes }: { mes: string }) => {
+    const decoded = decodeMessage(mes);
     const [isImage, setIsImage] = useState(false);
 
     useEffect(() => {
-        isImageUrl(mes).then(setIsImage);
-    }, [mes]);
+        isImageUrl(decoded).then(setIsImage);
+    }, [decoded]);
 
     return isImage ? (
-        <img src={mes} className="chat-image" />
+        <img src={decoded} className="chat-image" />
     ) : (
-        <span>{mes}</span>
+        <span>{decoded}</span>
     );
 };
