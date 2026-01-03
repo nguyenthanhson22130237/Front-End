@@ -1,7 +1,8 @@
-// src/components/Chat/ChatWindow.tsx
-import { ChatInput } from "../ChatInput";
+import { useEffect, useState } from "react";
+import { ChatInput } from "./ChatInput";
 import { useAppSelector } from "../../redux/hooks";
 import { RootState } from "../../redux/store";
+import { ChatMessage } from "./ChatMessage";
 import { isImageUrl, isVideoUrl } from "../../services/uploadService";
 
 export const ChatWindow = () => {
@@ -32,6 +33,7 @@ export const ChatWindow = () => {
                         key={i}
                         className={`message ${m.name === username ? "me" : ""}`}
                     >
+                        <ChatMessage mes={m.mes} />
 
                         {isImageUrl(m.mes) ? (
                             <img
