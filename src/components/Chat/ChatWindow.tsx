@@ -33,8 +33,6 @@ export const ChatWindow = () => {
                         key={i}
                         className={`message ${m.name === username ? "me" : ""}`}
                     >
-                        <ChatMessage mes={m.mes} />
-
                         {isImageUrl(m.mes) ? (
                             <img
                                 src={m.mes}
@@ -49,7 +47,7 @@ export const ChatWindow = () => {
                                 style={{ maxWidth: "300px", borderRadius: "10px" }}
                             />
                         ) : (
-                            <span>{m.mes}</span>
+                            <ChatMessage mes={m.mes} />
                         )}
                     </div>
                 ))}
