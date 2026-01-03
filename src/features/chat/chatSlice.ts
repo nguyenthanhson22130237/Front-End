@@ -1,17 +1,19 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { Message, ChatHistoryItem } from "./chatTypes";
+import {createSlice, PayloadAction} from "@reduxjs/toolkit";
+import {Message, ChatHistoryItem} from "./chatTypes";
 
 //Redux
-interface ChatState{
+interface ChatState {
     history: ChatHistoryItem[];
     messages: Message[];
     currentChat?: ChatHistoryItem;
+    onlineUsers: Record<string, boolean>;
 }
 
 const initialState: ChatState = {
     history: [],
     messages: [],
-    currentChat: undefined
+    currentChat: undefined,
+    onlineUsers: {}
 };
 
 const chatSlice = createSlice({
@@ -35,14 +37,14 @@ const chatSlice = createSlice({
         setCurrentChat: (state, action: PayloadAction<ChatHistoryItem>) => {
             state.currentChat = action.payload;
         },
-        appendMessage: (state, action: PayloadAction<Message>) => {
-            state.messages.push(action.payload);
-        },
         clearMessages: (state) => {
             state.messages = [];
         },
+        setUserOnline: (state, action: PayloadAction<{ user: string; online: boolean }>) => {
+            state.onlineUsers[action.payload.user] = action.payload.online;
+        }
     }
 })
 
-export const { setHistory, addHistory, setMessages, setCurrentChat, appendMessage, clearMessages} = chatSlice.actions;
+export const {setHistory, addHistory, setMessages, setCurrentChat, clearMessages, setUserOnline} = chatSlice.actions;
 export default chatSlice.reducer;
