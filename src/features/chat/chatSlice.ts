@@ -42,9 +42,13 @@ const chatSlice = createSlice({
         },
         setUserOnline: (state, action: PayloadAction<{ user: string; online: boolean }>) => {
             state.onlineUsers[action.payload.user] = action.payload.online;
+        },
+        appendMessage: (state, action) => {
+            state.messages.push(action.payload);
         }
+
     }
 })
 
-export const {setHistory, addHistory, setMessages, setCurrentChat, clearMessages, setUserOnline} = chatSlice.actions;
+export const {setHistory, addHistory, setMessages, setCurrentChat, clearMessages, setUserOnline, appendMessage} = chatSlice.actions;
 export default chatSlice.reducer;

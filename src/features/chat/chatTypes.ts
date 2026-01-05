@@ -10,6 +10,8 @@ export interface Message {
     to?: string;
     type?: number;
     mes: string;
+    // createdAt?: number | string;
     createAt?: string;
+    createdAt?: number;
 }
 
