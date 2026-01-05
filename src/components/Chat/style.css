@@ -7,7 +7,7 @@
 }
 /* Sidebar.css */
 .sidebar {
-    width: 300px;
+    width: auto;
     border-right: 1px solid #e0e0e0;
     background: #ffffff;
     display: flex;
@@ -147,11 +147,26 @@
 }
 .message {
     display: flex;
-    flex-direction: column;
     max-width: 50%;
     margin: 6px 0;
 }
 
+.message.me {
+    align-self: flex-end;
+}
+
+/* Wrapper quyết định chiều rộng */
+.bubble-wrapper {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.message.me .bubble-wrapper {
+    align-items: flex-end;
+}
+
+/* Bubble */
 .bubble {
     padding: 10px 14px;
     border-radius: 14px;
@@ -160,11 +175,8 @@
     font-size: 14px;
     line-height: 1.4;
     width: fit-content;
+    max-width: 100%;
     word-break: break-word;
-}
-
-.message.me {
-    align-self: flex-end;
 }
 
 .message.me .bubble {
@@ -176,11 +188,7 @@
     font-size: 11px;
     color: #999;
     margin-top: 3px;
-    padding: 0 4px;
-}
-
-.message.me .time {
-    align-self: flex-end;
+    white-space: nowrap;
 }
 
 .chat-body::-webkit-scrollbar {

@@ -14,7 +14,6 @@ class WebSocketService {
     private isLoggedIn = false;
     private isManualLogin = false;
     private tempRegPassword = "";
-    private lastPassword = "";
 
     private checkUserCallback?: (exists: boolean) => void;
     private checkingUser: string | null = null;
@@ -146,16 +145,11 @@ class WebSocketService {
 
                 if (!Array.isArray(res.data)) return;
 
-                const normalized: Message[] = res.data
-                    .map((m: Message) => ({
-                        ...m,
-                        createdAt: m.createAt
-                            ? new Date(m.createAt).getTime()
-                            : Date.now()
-                    }))
-                    .sort((a: Message, b: Message) =>
-                        (a.createdAt ?? 0) - (b.createdAt ?? 0)
-                    );
+                const normalized = res.data.sort(
+                    (a: Message, b: Message) =>
+                        new Date(a.createAt ?? 0).getTime() -
+                        new Date(b.createAt ?? 0).getTime()
+                );
 
                 store.dispatch(setMessages(normalized));
             }
@@ -180,7 +174,7 @@ class WebSocketService {
 
                 const msg: Message = {
                     ...res.data,
-                    createdAt: Date.now(),
+                    createAt: new Date().toISOString(),
                 };
 
                 if (
@@ -228,8 +222,6 @@ class WebSocketService {
     }
 
     login(username: string, password: string) {
-        this.lastPassword = password;
-
         if (this.isLoggedIn && !this.isSilentLogin) return;
 
         this.isManualLogin = !this.isSilentLogin;
@@ -310,7 +302,7 @@ class WebSocketService {
             name,
             to,
             mes,
-            createdAt: Date.now(),
+            createAt: new Date().toISOString(),
         };
 
         store.dispatch(appendMessage(localMsg));
