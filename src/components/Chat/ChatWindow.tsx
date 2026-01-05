@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { ChatInput } from "./ChatInput";
 import { useAppSelector } from "../../redux/hooks";
 import { RootState } from "../../redux/store";
@@ -15,6 +15,15 @@ export const ChatWindow = () => {
         (state: RootState) => state.auth.user?.username
     );
 
+    const chatBodyRef = useRef<HTMLDivElement | null>(null);
+
+    useEffect(() => {
+        const el = chatBodyRef.current;
+        if (!el) return;
+
+        el.scrollTop = el.scrollHeight;
+    }, [messages]);
+
     if (!currentChat) {
         return <div className="chat-window"><div style={{padding: 20}}>Chọn đoạn chat để bắt đầu</div></div>;
     }
@@ -27,32 +36,40 @@ export const ChatWindow = () => {
                 </div>
             </div>
 
-            <div className="chat-body">
+            <div className="chat-body" ref={chatBodyRef}>
                 {(messages || []).map((m, i) => (
                     <div
                         key={i}
                         className={`message ${m.name === username ? "me" : ""}`}
                     >
-                        {isImageUrl(m.mes) ? (
-                            <img
-                                src={m.mes}
-                                alt="sent image"
-                                style={{ maxWidth: "200px", borderRadius: "10px", cursor: "pointer" }}
-                                onClick={() => window.open(m.mes, "_blank")}
-                            />
-                        ) : isVideoUrl(m.mes) ? (
-                            <video
-                                src={m.mes}
-                                controls
-                                style={{ maxWidth: "300px", borderRadius: "10px" }}
-                            />
-                        ) : (
-                            <ChatMessage mes={m.mes} />
-                        )}
+                        <div className="bubble">
+                            {isImageUrl(m.mes) ? (
+                                <img
+                                    src={m.mes}
+                                    alt="sent image"
+                                    style={{maxWidth: "200px", borderRadius: "10px", cursor: "pointer"}}
+                                    onClick={() => window.open(m.mes, "_blank")}
+                                />
+                            ) : isVideoUrl(m.mes) ? (
+                                <video
+                                    src={m.mes}
+                                    controls
+                                    style={{maxWidth: "300px", borderRadius: "10px"}}
+                                />
+                            ) : (
+                                <ChatMessage mes={m.mes}/>
+                            )}
+                        </div>
+                        <div className="time">
+                            {new Date(m.createdAt!).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                            })}
+                        </div>
                     </div>
                 ))}
             </div>
-            <ChatInput />
+            <ChatInput/>
         </div>
     );
 };

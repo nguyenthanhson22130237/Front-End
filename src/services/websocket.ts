@@ -1,6 +1,7 @@
 import {store} from "../redux/store";
 import {setUser} from "../features/auth/authSlice";
-import {addHistory, setMessages, setCurrentChat, setHistory, setUserOnline} from "../features/chat/chatSlice";
+import {Message} from "../features/chat/chatTypes"
+import {addHistory, setMessages, setCurrentChat, setHistory, setUserOnline, appendMessage} from "../features/chat/chatSlice";
 
 class WebSocketService {
     private socket: WebSocket | null = null;
@@ -142,9 +143,21 @@ class WebSocketService {
                     res.event === "GET_ROOM_CHAT_MES") &&
                 res.status === "success"
             ) {
-                const listMessages = Array.isArray(res.data) ? res.data : [];
 
-                store.dispatch(setMessages([...listMessages].reverse()));
+                if (!Array.isArray(res.data)) return;
+
+                const normalized: Message[] = res.data
+                    .map((m: Message) => ({
+                        ...m,
+                        createdAt: m.createAt
+                            ? new Date(m.createAt).getTime()
+                            : Date.now()
+                    }))
+                    .sort((a: Message, b: Message) =>
+                        (a.createdAt ?? 0) - (b.createdAt ?? 0)
+                    );
+
+                store.dispatch(setMessages(normalized));
             }
 
             if (res.event === "GET_USER_LIST" && res.status === "success") {
@@ -160,6 +173,28 @@ class WebSocketService {
                     })
                 );
             }
+
+            if (res.event === "SEND_CHAT" && res.status === "success") {
+                const currentChat = store.getState().chat.currentChat;
+                if (!currentChat) return;
+
+                const msg: Message = {
+                    ...res.data,
+                    createdAt: Date.now(),
+                };
+
+                if (
+                    msg.type === 0 &&
+                    (msg.name === currentChat.name || msg.to === currentChat.name)
+                ) {
+                    store.dispatch(appendMessage(msg));
+                }
+
+                if (msg.type === 1 && msg.to === currentChat.name) {
+                    store.dispatch(appendMessage(msg));
+                }
+            }
+
 
             if (res.status === "error") {
                 if (["LOGIN", "RE_LOGIN"].includes(res.event)) {
@@ -268,11 +303,23 @@ class WebSocketService {
     sendChat(type: "people" | "room", to: string, mes: string) {
         if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
 
+        const name = localStorage.getItem("USERNAME") || "";
+
+        const localMsg = {
+            type,
+            name,
+            to,
+            mes,
+            createdAt: Date.now(),
+        };
+
+        store.dispatch(appendMessage(localMsg));
+
         this.socket.send(JSON.stringify({
             action: "onchat",
             data: {
                 event: "SEND_CHAT",
-                data: {type, to, mes}
+                data: { type, to, mes }
             }
         }));
     }
