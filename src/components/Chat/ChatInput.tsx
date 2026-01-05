@@ -16,14 +16,23 @@ export const ChatInput = () => {
     const currentChat = useAppSelector(state => state.chat.currentChat);
 
     const send = (content: string = message) => {
+
+        const cleanContent = content ? content.trim() : "";
+
+        if (!cleanContent) {
+            return;
+        }
+
         // @ts-ignore
         const type = currentChat.type === 1 ? "room" : "people";
         // @ts-ignore
         const to = currentChat.name;
-        const encoded = btoa(unescape(encodeURIComponent(content)));
+
+        const encoded = btoa(unescape(encodeURIComponent(cleanContent)));
 
         wsService.sendChat(type, to, encoded);
         setMessage("");
+        setShowEmoji(false);
     };
 
     const onEmojiClick = (emojiData: EmojiClickData) => {
@@ -96,7 +105,10 @@ export const ChatInput = () => {
                     disabled={isUploading}
                 />
 
-                <button className={styles.button} onClick={() => send()}>
+                <button
+                    className={styles.button}
+                    onClick={() => send()}
+                >
                     {isUploading ? "..." : <Send size={18}/>}
                 </button>
             </div>
