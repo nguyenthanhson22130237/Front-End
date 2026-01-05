@@ -142,7 +142,9 @@ class WebSocketService {
                     res.event === "GET_ROOM_CHAT_MES") &&
                 res.status === "success"
             ) {
-                store.dispatch(setMessages([...(res.data || [])].reverse()));
+                const listMessages = Array.isArray(res.data) ? res.data : [];
+
+                store.dispatch(setMessages([...listMessages].reverse()));
             }
 
             if (res.event === "GET_USER_LIST" && res.status === "success") {
@@ -193,7 +195,6 @@ class WebSocketService {
     login(username: string, password: string) {
         this.lastPassword = password;
 
-        //  CHỈ CHẶN LOGIN THỦ CÔNG, KHÔNG CHẶN SILENT LOGIN
         if (this.isLoggedIn && !this.isSilentLogin) return;
 
         this.isManualLogin = !this.isSilentLogin;
