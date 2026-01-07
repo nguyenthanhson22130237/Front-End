@@ -1,6 +1,6 @@
 import {useState, useEffect} from "react";
-import { useAppSelector } from "../redux/hooks";
-import { useNavigate } from "react-router-dom";
+import {useAppSelector} from "../redux/hooks";
+import {useNavigate} from "react-router-dom";
 // @ts-ignore
 import styles from "./RegisterForm.module.css";
 import {wsService} from "../services/websocket";
@@ -11,14 +11,29 @@ export const RegisterForm = () => {
     const [password2, setPassword2] = useState("");
     const [message, setMessage] = useState("");
     const [status, setStatus] = useState<"success" | "error" | "">("");
+    const [notifyId, setNotifyId] = useState(0);
+    const [showNotification, setShowNotification] = useState(false);
 
     const auth = useAppSelector((state) => state.auth.user);
     const navigate = useNavigate();
     useEffect(() => {
         if (auth?.authenticated) {
-            navigate("/chat", { replace: true });
+            navigate("/chat", {replace: true});
         }
     }, [auth?.authenticated]);
+
+    useEffect(() => {
+        if (!message) return;
+
+        setShowNotification(true);
+
+        const timer = setTimeout(() => {
+            setShowNotification(false);
+        }, 5000);
+
+        return () => clearTimeout(timer);
+    }, [notifyId]);
+
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -26,16 +41,19 @@ export const RegisterForm = () => {
 
         if (!username) {
             setMessage("Vui lòng nhập username");
+            setNotifyId(prev => prev + 1);
             return;
         }
 
         if (!password || !password2) {
             setMessage("Vui lòng nhập mật khẩu");
+            setNotifyId(prev => prev + 1);
             return;
         }
 
         if (password !== password2) {
             setMessage("Mật khẩu không khớp");
+            setNotifyId(prev => prev + 1);
             return;
         }
 
@@ -45,10 +63,12 @@ export const RegisterForm = () => {
             password,
             (msg) => {
                 setMessage(msg);
+                setNotifyId(prev => prev + 1);
                 setStatus("success");
             },
             (err) => {
                 setMessage(err);
+                setNotifyId(prev => prev + 1);
                 setStatus("error");
             }
         );
@@ -101,13 +121,15 @@ export const RegisterForm = () => {
 
             {message && (
                 <div
-                    className={`${styles.notification} ${
-                        status === "success" ? styles.success : styles.error
-                    }`}
+                    key={notifyId}
+                    className={`${styles.notification}
+                    ${status === "success" ? styles.success : styles.error}`}
                 >
                     {message}
                 </div>
             )}
+
+
 
         </div>
     );

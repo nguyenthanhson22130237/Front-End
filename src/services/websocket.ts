@@ -69,7 +69,9 @@ class WebSocketService {
                     this.onRegisterSuccess?.("Đăng ký thành công");
                 } else {
                     this.isManualLogin = false;
-                    this.onRegisterError?.(res.mes);
+                    if (res.mes === "User already exists!") this.onRegisterError?.("Tài khoản đã tồn tại!");
+                    if (res.mes === "Username containt whitespace") this.onRegisterError?.("Tài khoản không được chứa khoảng trắng!");
+                    if (res.mes === "Username contain special character!") this.onRegisterError?.("Tài khoản không được chứa kí tự đặc biệt!");
                 }
                 return;
             }
