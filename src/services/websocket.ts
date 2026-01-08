@@ -5,7 +5,18 @@ import {addHistory, setMessages, setCurrentChat, setHistory, setUserOnline, appe
 import { setConnected } from "../features/websocket/websocketSlice";
 
 class WebSocketService {
+    private static instance: WebSocketService;
     private socket: WebSocket | null = null;
+
+    private constructor() {}
+
+    static getInstance() {
+        if (!WebSocketService.instance) {
+            WebSocketService.instance = new WebSocketService();
+        }
+        return WebSocketService.instance;
+    }
+
     private reconnectTimer: any = null;
 
     private onRegisterSuccess?: (msg: string) => void;
@@ -420,4 +431,4 @@ class WebSocketService {
     }
 }
 
-export const wsService = new WebSocketService();
+export const wsService = WebSocketService.getInstance();
