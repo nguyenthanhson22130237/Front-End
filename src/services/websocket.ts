@@ -2,9 +2,21 @@ import {store} from "../redux/store";
 import {setUser} from "../features/auth/authSlice";
 import {Message} from "../features/chat/chatTypes"
 import {addHistory, setMessages, setCurrentChat, setHistory, setUserOnline, appendMessage} from "../features/chat/chatSlice";
+import { setConnected } from "../features/websocket/websocketSlice";
 
 class WebSocketService {
+    private static instance: WebSocketService;
     private socket: WebSocket | null = null;
+
+    private constructor() {}
+
+    static getInstance() {
+        if (!WebSocketService.instance) {
+            WebSocketService.instance = new WebSocketService();
+        }
+        return WebSocketService.instance;
+    }
+
     private reconnectTimer: any = null;
 
     private onRegisterSuccess?: (msg: string) => void;
@@ -42,6 +54,7 @@ class WebSocketService {
 
         this.socket.onopen = () => {
             console.log("[WS] Connected");
+            store.dispatch(setConnected(true));
 
             if (this.isManualLogin) return;
 
@@ -69,7 +82,9 @@ class WebSocketService {
                     this.onRegisterSuccess?.("Đăng ký thành công");
                 } else {
                     this.isManualLogin = false;
-                    this.onRegisterError?.(res.mes);
+                    if (res.mes === "User already exists!") this.onRegisterError?.("Tài khoản đã tồn tại!");
+                    if (res.mes === "Username containt whitespace") this.onRegisterError?.("Tài khoản không được chứa khoảng trắng!");
+                    if (res.mes === "Username contain special character!") this.onRegisterError?.("Tài khoản không được chứa kí tự đặc biệt!");
                 }
                 return;
             }
@@ -203,10 +218,12 @@ class WebSocketService {
 
         this.socket.onerror = (err) => {
             console.error("[WS] Error", err);
+            store.dispatch(setConnected(false));
         };
 
         this.socket.onclose = () => {
             console.log("[WS] Disconnected");
+            store.dispatch(setConnected(false));
 
             this.socket = null;
             this.isLoggedIn = false;
@@ -414,4 +431,4 @@ class WebSocketService {
     }
 }
 
-export const wsService = new WebSocketService();
+export const wsService = WebSocketService.getInstance();
