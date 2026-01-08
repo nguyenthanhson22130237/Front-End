@@ -2,6 +2,7 @@ import {store} from "../redux/store";
 import {setUser} from "../features/auth/authSlice";
 import {Message} from "../features/chat/chatTypes"
 import {addHistory, setMessages, setCurrentChat, setHistory, setUserOnline, appendMessage} from "../features/chat/chatSlice";
+import { setConnected } from "../features/websocket/websocketSlice";
 
 class WebSocketService {
     private socket: WebSocket | null = null;
@@ -42,6 +43,7 @@ class WebSocketService {
 
         this.socket.onopen = () => {
             console.log("[WS] Connected");
+            store.dispatch(setConnected(true));
 
             if (this.isManualLogin) return;
 
@@ -205,10 +207,12 @@ class WebSocketService {
 
         this.socket.onerror = (err) => {
             console.error("[WS] Error", err);
+            store.dispatch(setConnected(false));
         };
 
         this.socket.onclose = () => {
             console.log("[WS] Disconnected");
+            store.dispatch(setConnected(false));
 
             this.socket = null;
             this.isLoggedIn = false;

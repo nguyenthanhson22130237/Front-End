@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import { wsService } from "./services/websocket";
+import { WebSocketLoader } from "./components/WebSocketLoader";
 
 const App = () => {
     useEffect(() => {
@@ -9,6 +10,7 @@ const App = () => {
 
     return (
         <>
+            <WebSocketLoader />
             <Outlet />
         </>
     );
