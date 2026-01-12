@@ -1,6 +1,6 @@
 export interface ChatHistoryItem {
-    name: string;     // tên user hoặc room
-    type: 0 | 1;      // 0 = people, 1 = room
+    name: string;
+    type: 0 | 1;
     actionTime?: string;
 }
 

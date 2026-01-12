@@ -24,6 +24,7 @@ export const Sidebar = () => {
 
     const createRoom = () => {
         if (!roomInput.trim()) {
+            alert("Vui lòng nhập tên phòng");
             return;
         }
         const name = roomInput.trim();
