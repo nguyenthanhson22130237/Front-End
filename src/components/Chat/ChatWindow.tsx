@@ -62,36 +62,46 @@ export const ChatWindow = () => {
             </div>
 
             <div className="chat-body" ref={chatBodyRef}>
-                {(messages || []).map((m, i) => (
-                    <div
-                        key={i}
-                        className={`message ${m.name === username ? "me" : ""}`}
-                    >
-                        <div className="bubble-wrapper">
-                            <div className="bubble">
-                                {isImageUrl(m.mes) ? (
-                                    <img
-                                        src={m.mes}
-                                        alt="sent image"
-                                        style={{maxWidth: "200px", borderRadius: "10px", cursor: "pointer"}}
-                                        onClick={() => window.open(m.mes, "_blank")}
-                                    />
-                                ) : isVideoUrl(m.mes) ? (
-                                    <video
-                                        src={m.mes}
-                                        controls
-                                        style={{maxWidth: "300px", borderRadius: "10px"}}
-                                    />
-                                ) : (
-                                    <ChatMessage mes={m.mes}/>
+                {(messages || []).map((m, i) => {
+                    const isMe = m.name === username;
+
+                    return (
+                        <div
+                            key={i}
+                            className={`message ${m.name === username ? "me" : ""}`}
+                        >
+
+                            <div className="bubble-wrapper">
+                                {!isMe && (
+                                    <div className="sender-name">
+                                        {m.name}
+                                    </div>
                                 )}
-                            </div>
-                            <div className="time">
-                                {formatChatTime(m.createAt!)}
+                                <div className="bubble">
+                                    {isImageUrl(m.mes) ? (
+                                        <img
+                                            src={m.mes}
+                                            alt="sent image"
+                                            style={{maxWidth: "200px", borderRadius: "10px", cursor: "pointer"}}
+                                            onClick={() => window.open(m.mes, "_blank")}
+                                        />
+                                    ) : isVideoUrl(m.mes) ? (
+                                        <video
+                                            src={m.mes}
+                                            controls
+                                            style={{maxWidth: "300px", borderRadius: "10px"}}
+                                        />
+                                    ) : (
+                                        <ChatMessage mes={m.mes}/>
+                                    )}
+                                </div>
+                                <div className="time">
+                                    {formatChatTime(m.createAt!)}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
             <ChatInput/>
         </div>

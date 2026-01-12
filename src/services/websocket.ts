@@ -4,6 +4,7 @@ import {Message} from "../features/chat/chatTypes"
 import {addHistory, setMessages, setCurrentChat, setHistory, setUserOnline, appendMessage} from "../features/chat/chatSlice";
 import { setConnected } from "../features/websocket/websocketSlice";
 
+
 class WebSocketService {
     private static instance: WebSocketService;
     private socket: WebSocket | null = null;
@@ -138,11 +139,20 @@ class WebSocketService {
                 return;
             }
 
-            if ((res.event === "CREATE_ROOM" || res.event === "JOIN_ROOM") && res.status === "success") {
-                const roomName = res.data.name;
-                if (roomName) {
-                    store.dispatch(addHistory({name: roomName, type: 1}));
-                    store.dispatch(setCurrentChat({name: roomName, type: 1}));
+            if (res.event === "CREATE_ROOM" || res.event === "JOIN_ROOM") {
+
+                if (res.status === "error") {
+                    alert(res.mes);
+                    return;
+                }
+
+                if (res.status === "success") {
+                    const roomName = res.data.name;
+                    if (roomName) {
+                        store.dispatch(addHistory({name: roomName, type: 1}));
+                        store.dispatch(setCurrentChat({name: roomName, type: 1}));
+                    }
+                    wsService.getRoomChatMess(roomName, 1);
                 }
             }
 
@@ -152,12 +162,9 @@ class WebSocketService {
                 this.checkUserCallback = undefined;
             }
 
-            if (
-                (res.event === "GET_PEOPLE_CHAT_MES" ||
-                    res.event === "GET_ROOM_CHAT_MES") &&
-                res.status === "success"
-            ) {
+            if (res.status !== "success") return;
 
+            if (res.event === "GET_PEOPLE_CHAT_MES") {
                 if (!Array.isArray(res.data)) return;
 
                 const normalized = res.data.sort(
@@ -165,12 +172,27 @@ class WebSocketService {
                         new Date(a.createAt ?? 0).getTime() -
                         new Date(b.createAt ?? 0).getTime()
                 );
+                store.dispatch(setMessages(normalized));
+            }
 
+            if (res.event === "GET_ROOM_CHAT_MES") {
+                if (!res.data?.chatData || !Array.isArray(res.data.chatData)) return;
+
+                const normalized = res.data.chatData.sort(
+                    (a: Message, b: Message) =>
+                        new Date(a.createAt ?? 0).getTime() -
+                        new Date(b.createAt ?? 0).getTime()
+                );
                 store.dispatch(setMessages(normalized));
             }
 
             if (res.event === "GET_USER_LIST" && res.status === "success") {
-                store.dispatch(setHistory(res.data));
+                const username = localStorage.getItem("USERNAME");
+
+                const filtered = (res.data || []).filter(
+                    (u: any) => u.name !== username
+                );
+                store.dispatch(setHistory(filtered));
             }
 
             if (res.event === "CHECK_USER_ONLINE" && res.status === "success") {
@@ -203,7 +225,6 @@ class WebSocketService {
                     store.dispatch(appendMessage(msg));
                 }
             }
-
 
             if (res.status === "error") {
                 if (["LOGIN", "RE_LOGIN"].includes(res.event)) {
@@ -328,7 +349,7 @@ class WebSocketService {
             action: "onchat",
             data: {
                 event: "SEND_CHAT",
-                data: { type, to, mes }
+                data: {type, to, mes}
             }
         }));
     }
