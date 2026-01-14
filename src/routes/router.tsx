@@ -3,6 +3,7 @@ import App from "../App";
 import LoginPage from "../pages/LoginPage";
 import RegisterPage from "../pages/RegisterPage";
 import ChatPage from "../pages/ChatPage";
+import VideoCall from "../pages/VideoCall";
 
 export const router = createBrowserRouter([
     {
@@ -13,6 +14,7 @@ export const router = createBrowserRouter([
             { path: "login", element: <LoginPage /> },
             { path: "register", element: <RegisterPage /> },
             { path: "chat", element: <ChatPage /> },
+            { path: "call/:roomId", element: <VideoCall /> },
         ],
     },
 ]);

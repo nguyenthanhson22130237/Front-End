@@ -1,11 +1,17 @@
-import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Video, Phone } from "lucide-react";
+
 import { ChatInput } from "./ChatInput";
 import { useAppSelector } from "../../redux/hooks";
 import { RootState } from "../../redux/store";
 import { ChatMessage } from "./ChatMessage";
 import { isImageUrl, isVideoUrl } from "../../services/uploadService";
+import { wsService } from "../../services/websocket";
+
+import "./ChatWindow.css";
 
 export const ChatWindow = () => {
+    const navigate = useNavigate();
 
     const { currentChat, messages } = useAppSelector(
         (state: RootState) => state.chat
@@ -15,15 +21,62 @@ export const ChatWindow = () => {
         (state: RootState) => state.auth.user?.username
     );
 
+    const handleCall = (isVideoCall: boolean) => {
+        if (!currentChat) return;
+
+        const roomId = `call_${Date.now()}`;
+        const mode = isVideoCall ? "video" : "voice";
+        const callUrl = `${window.location.origin}/call/${roomId}?mode=${mode}`;
+
+        const msgContent = isVideoCall
+            ? `Đang gọi Video...\nBấm vào link để nghe: ${callUrl}`
+            : `Đang gọi Thoại...\nBấm vào link để nghe: ${callUrl}`;
+
+        // @ts-ignore
+        const type = currentChat.type === 1 ? "room" : "people";
+        // @ts-ignore
+        const to = currentChat.name;
+
+        const encoded = btoa(unescape(encodeURIComponent(msgContent)));
+        wsService.sendChat(type, to, encoded);
+
+        navigate(`/call/${roomId}?mode=${mode}`);
+    };
+
     if (!currentChat) {
-        return <div className="chat-window"><div style={{padding: 20}}>Chọn đoạn chat để bắt đầu</div></div>;
+        return (
+            <div className="chat-window empty">
+                <div className="chat-placeholder">
+                    Chọn đoạn chat để bắt đầu
+                </div>
+            </div>
+        );
     }
 
     return (
         <div className="chat-window">
             <div className="chat-header">
                 <div className="chat-title">
-                    {currentChat.type === 1 ? "Phòng: " : "User: "} {currentChat.name}
+                    {currentChat.type === 1 ? "Phòng: " : "User: "}
+                    {currentChat.name}
+                </div>
+
+                <div className="call-actions">
+                    <button
+                        className="call-btn voice"
+                        onClick={() => handleCall(false)}
+                        title="Gọi thoại"
+                    >
+                        <Phone size={18} />
+                    </button>
+
+                    <button
+                        className="call-btn video"
+                        onClick={() => handleCall(true)}
+                        title="Gọi video"
+                    >
+                        <Video size={18} />
+                    </button>
                 </div>
             </div>
 
@@ -31,20 +84,22 @@ export const ChatWindow = () => {
                 {(messages || []).map((m, i) => (
                     <div
                         key={i}
-                        className={`message ${m.name === username ? "me" : ""}`}
+                        className={`message ${
+                            m.name === username ? "me" : ""
+                        }`}
                     >
                         {isImageUrl(m.mes) ? (
                             <img
                                 src={m.mes}
-                                alt="sent image"
-                                style={{ maxWidth: "200px", borderRadius: "10px", cursor: "pointer" }}
+                                alt="sent"
+                                className="chat-image"
                                 onClick={() => window.open(m.mes, "_blank")}
                             />
                         ) : isVideoUrl(m.mes) ? (
                             <video
                                 src={m.mes}
                                 controls
-                                style={{ maxWidth: "300px", borderRadius: "10px" }}
+                                className="chat-video"
                             />
                         ) : (
                             <ChatMessage mes={m.mes} />
@@ -52,6 +107,7 @@ export const ChatWindow = () => {
                     </div>
                 ))}
             </div>
+
             <ChatInput />
         </div>
     );

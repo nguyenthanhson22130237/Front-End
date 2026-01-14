@@ -1,0 +1,116 @@
+/* Overlay */
+.incoming-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+    backdrop-filter: blur(6px);
+}
+
+/* Card */
+.incoming-card {
+    width: 320px;
+    padding: 32px;
+    background: #fff;
+    border-radius: 24px;
+    text-align: center;
+    position: relative;
+}
+
+/* Close button */
+.incoming-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    cursor: pointer;
+}
+
+/* Avatar */
+.incoming-avatar {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+    font-size: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    animation: pulse 1.5s infinite;
+}
+
+/* Name */
+.incoming-name {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 24px;
+}
+
+/* Buttons */
+.incoming-actions {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+
+.incoming-btn {
+    border: none;
+    border-radius: 32px;
+    padding: 16px 24px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.incoming-btn.reject {
+    background: #ff4757;
+}
+
+.incoming-btn.accept {
+    background: #2ed573;
+}
+
+/* Progress */
+.incoming-progress {
+    margin-top: 24px;
+    height: 4px;
+    background: #eee;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.incoming-bar {
+    height: 100%;
+    background: #2ed573;
+    animation: countDown 30s linear forwards;
+}
+
+/* Animations */
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(118, 75, 162, 0.7);
+    }
+    70% {
+        transform: scale(1.1);
+        box-shadow: 0 0 0 15px rgba(118, 75, 162, 0);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(118, 75, 162, 0);
+    }
+}
+
+@keyframes countDown {
+    from {
+        width: 100%;
+    }
+    to {
+        width: 0%;
+    }
+}
