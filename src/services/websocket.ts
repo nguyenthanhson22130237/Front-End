@@ -71,6 +71,10 @@ class WebSocketService {
             let res = JSON.parse(event.data);
             console.log("WS:", res);
 
+            window.dispatchEvent(new CustomEvent("GLOBAL_MSG", {
+                detail: res
+            }));
+
             if (res.event === "REGISTER") {
                 if (res.status === "success") {
                     const username = localStorage.getItem("USERNAME");

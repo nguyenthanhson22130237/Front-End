@@ -1,13 +1,20 @@
-import {useEffect, useState, useRef} from "react";
-import {ChatInput} from "./ChatInput";
-import {useAppSelector} from "../../redux/hooks";
-import {RootState} from "../../redux/store";
-import {ChatMessage} from "./ChatMessage";
-import {isImageUrl, isVideoUrl} from "../../services/uploadService";
+import { useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { Video, Phone } from "lucide-react";
+
+import { ChatInput } from "./ChatInput";
+import { useAppSelector } from "../../redux/hooks";
+import { RootState } from "../../redux/store";
+import { ChatMessage } from "./ChatMessage";
+import { isImageUrl, isVideoUrl } from "../../services/uploadService";
+import { wsService } from "../../services/websocket";
+
+import "./ChatWindow.css";
 
 export const ChatWindow = () => {
+    const navigate = useNavigate();
 
-    const {currentChat, messages} = useAppSelector(
+    const { currentChat, messages } = useAppSelector(
         (state: RootState) => state.chat
     );
 
@@ -15,8 +22,29 @@ export const ChatWindow = () => {
         (state: RootState) => state.auth.user?.username
     );
 
+    const handleCall = (isVideoCall: boolean) => {
+        if (!currentChat) return;
+
+        const roomId = `call_${Date.now()}`;
+        const mode = isVideoCall ? "video" : "voice";
+        const callUrl = `${window.location.origin}/call/${roomId}?mode=${mode}`;
+
+        const msgContent = isVideoCall
+            ? `Đang gọi Video...\nBấm vào link để nghe: ${callUrl}`
+            : `Đang gọi Thoại...\nBấm vào link để nghe: ${callUrl}`;
+
+        // @ts-ignore
+        const type = currentChat.type === 1 ? "room" : "people";
+        // @ts-ignore
+        const to = currentChat.name;
+
+        const encoded = btoa(unescape(encodeURIComponent(msgContent)));
+        wsService.sendChat(type, to, encoded);
+
+        navigate(`/call/${roomId}?mode=${mode}`);
+    };
+
     const formatChatTime = (dateStr: string) => {
-        // Chuẩn hóa ISO
         const date = new Date(dateStr.replace(" ", "T"));
         const now = new Date();
 
@@ -30,11 +58,9 @@ export const ChatWindow = () => {
             minute: "2-digit",
         });
 
-        if (isToday) {
-            return time;
-        }
+        if (isToday) return time;
 
-        const day = date.toLocaleDateString("en-GB"); // DD/MM/YYYY
+        const day = date.toLocaleDateString("en-GB");
         return `${time} ${day}`;
     };
 
@@ -43,21 +69,43 @@ export const ChatWindow = () => {
     useEffect(() => {
         const el = chatBodyRef.current;
         if (!el) return;
-
         el.scrollTop = el.scrollHeight;
     }, [messages]);
 
     if (!currentChat) {
-        return <div className="chat-window">
-            <div style={{padding: 20}}>Chọn đoạn chat để bắt đầu</div>
-        </div>;
+        return (
+            <div className="chat-window empty">
+                <div className="chat-placeholder">
+                    Chọn đoạn chat để bắt đầu
+                </div>
+            </div>
+        );
     }
 
     return (
         <div className="chat-window">
             <div className="chat-header">
                 <div className="chat-title">
-                    {currentChat.type === 1 ? "Phòng: " : "User: "} {currentChat.name}
+                    {currentChat.type === 1 ? "Phòng: " : "User: "}
+                    {currentChat.name}
+                </div>
+
+                <div className="call-actions">
+                    <button
+                        className="call-btn voice"
+                        onClick={() => handleCall(false)}
+                        title="Gọi thoại"
+                    >
+                        <Phone size={18} />
+                    </button>
+
+                    <button
+                        className="call-btn video"
+                        onClick={() => handleCall(true)}
+                        title="Gọi video"
+                    >
+                        <Video size={18} />
+                    </button>
                 </div>
             </div>
 
@@ -68,33 +116,34 @@ export const ChatWindow = () => {
                     return (
                         <div
                             key={i}
-                            className={`message ${m.name === username ? "me" : ""}`}
+                            className={`message ${isMe ? "me" : ""}`}
                         >
-
                             <div className="bubble-wrapper">
                                 {!isMe && (
                                     <div className="sender-name">
                                         {m.name}
                                     </div>
                                 )}
+
                                 <div className="bubble">
                                     {isImageUrl(m.mes) ? (
                                         <img
                                             src={m.mes}
-                                            alt="sent image"
-                                            style={{maxWidth: "200px", borderRadius: "10px", cursor: "pointer"}}
+                                            alt="sent"
+                                            className="chat-image"
                                             onClick={() => window.open(m.mes, "_blank")}
                                         />
                                     ) : isVideoUrl(m.mes) ? (
                                         <video
                                             src={m.mes}
                                             controls
-                                            style={{maxWidth: "300px", borderRadius: "10px"}}
+                                            className="chat-video"
                                         />
                                     ) : (
-                                        <ChatMessage mes={m.mes}/>
+                                        <ChatMessage mes={m.mes} />
                                     )}
                                 </div>
+
                                 <div className="time">
                                     {formatChatTime(m.createAt!)}
                                 </div>
@@ -103,7 +152,8 @@ export const ChatWindow = () => {
                     );
                 })}
             </div>
-            <ChatInput/>
+
+            <ChatInput />
         </div>
     );
 };

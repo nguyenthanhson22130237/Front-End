@@ -1,0 +1,86 @@
+.chat-window {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.chat-window.empty {
+    justify-content: center;
+    align-items: center;
+}
+
+.chat-placeholder {
+    padding: 20px;
+    color: #777;
+}
+
+/* Header */
+.chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.chat-title {
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+/* Call buttons */
+.call-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.call-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    cursor: pointer;
+    border-radius: 20px;
+    padding: 8px 12px;
+    font-weight: 600;
+}
+
+.call-btn.voice {
+    background-color: #e0f2f1;
+    color: #007a8c;
+}
+
+.call-btn.video {
+    background-color: #007a8c;
+    color: white;
+}
+
+/* Body */
+.chat-body {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+}
+
+/* Message */
+.message {
+    margin-bottom: 10px;
+    max-width: 70%;
+}
+
+.message.me {
+    margin-left: auto;
+    text-align: right;
+}
+
+/* Media */
+.chat-image {
+    max-width: 200px;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.chat-video {
+    max-width: 300px;
+    border-radius: 10px;
+}
