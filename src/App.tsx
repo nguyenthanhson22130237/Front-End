@@ -2,91 +2,92 @@ import { useEffect, useState, useRef } from "react";
 import { Outlet } from "react-router-dom";
 import { wsService } from "./services/websocket";
 import { IncomingCall } from "./components/IncomingCall";
+import { WebSocketLoader } from "./components/WebSocketLoader";
 
 const App = () => {
-    const [incomingCall, setIncomingCall] = useState<{name: string, url: string, id: string} | null>(null);
+    const [incomingCall, setIncomingCall] = useState<{
+        name: string;
+        url: string;
+        id: string;
+    } | null>(null);
+
     const currentUser = localStorage.getItem("USERNAME");
 
-    // useRef giúp lưu danh sách ID đã xử lý mà không gây render lại
+    // Lưu các message ID đã xử lý (chống popup lặp)
     const processedIdsRef = useRef<Set<string>>(new Set());
 
     useEffect(() => {
-        // Kết nối WS khi App chạy
         wsService.connect();
     }, []);
 
     useEffect(() => {
         const handleNewMessage = (event: any) => {
-            // 1. Lấy gói tin gốc từ websocket.ts gửi sang
             const payload = event.detail;
             if (!payload) return;
 
-            // 2. CHỈ XỬ LÝ SỰ KIỆN GỬI TIN NHẮN (SEND_CHAT)
-            // Cấu trúc server trả về: { event: "SEND_CHAT", data: { ...tin nhắn... } }
-            if (payload.event !== 'SEND_CHAT' || !payload.data) {
-                return;
-            }
+            if (payload.event !== "SEND_CHAT" || !payload.data) return;
 
-            const msg = payload.data; // Đây mới là tin nhắn thật
+            const msg = payload.data;
 
-            // 3. TẠO ID DUY NHẤT CHO TIN NHẮN
-            const msgId = msg._id || msg.id || (msg.sender + "_" + (msg.createdAt || Date.now()));
+            const msgId =
+                msg._id ||
+                msg.id ||
+                `${msg.sender}_${msg.createdAt || Date.now()}`;
 
-            // 4. KIỂM TRA ĐÃ XỬ LÝ CHƯA (Chống lặp)
-            // Check 1: Đã xử lý trong phiên chạy hiện tại (RAM)
+            // Chống xử lý trùng
             if (processedIdsRef.current.has(msgId)) return;
-            // Check 2: Đã xử lý trước khi F5 (SessionStorage)
             if (sessionStorage.getItem(`call_processed_${msgId}`)) return;
 
-            // 5. KIỂM TRA THỜI GIAN (Chống cuộc gọi ma quá khứ)
-            const msgTimeStr = msg.createdAt || msg.timestamp || msg.created_at;
+            // Chống cuộc gọi cũ
+            const msgTimeStr =
+                msg.createdAt || msg.timestamp || msg.created_at;
             if (msgTimeStr) {
                 const msgTime = new Date(msgTimeStr).getTime();
-                const now = Date.now();
-                // Nếu tin nhắn cũ quá 60 giây -> BỎ QUA NGAY
-                if (now - msgTime > 60000) return;
+                if (Date.now() - msgTime > 60000) return;
             }
 
-            // 6. GIẢI MÃ VÀ KIỂM TRA LINK GỌI
             const rawContent = msg.content || msg.mes || msg.message || "";
-            const senderName = msg.sender || msg.name || msg.username || "";
+            const senderName =
+                msg.sender || msg.name || msg.username || "";
 
             if (!rawContent) return;
 
             try {
-                const decodedContent = decodeURIComponent(escape(atob(rawContent)));
+                const decodedContent = decodeURIComponent(
+                    escape(atob(rawContent))
+                );
 
-                // Logic: Có link gọi VÀ người gửi không phải là mình
-                if (decodedContent.includes("/call/call_") && senderName !== currentUser) {
-
+                if (
+                    decodedContent.includes("/call/call_") &&
+                    senderName !== currentUser
+                ) {
                     const urlRegex = /(http[s]?:\/\/[^\s]+)/g;
                     const match = decodedContent.match(urlRegex);
 
                     if (match) {
-                        console.log("🔔 CÓ CUỘC GỌI MỚI:", senderName);
+                        console.log("CÓ CUỘC GỌI MỚI:", senderName);
 
-                        // Đánh dấu ngay là đã xử lý
                         processedIdsRef.current.add(msgId);
-                        sessionStorage.setItem(`call_processed_${msgId}`, "true");
+                        sessionStorage.setItem(
+                            `call_processed_${msgId}`,
+                            "true"
+                        );
 
-                        // Hiện Popup
                         setIncomingCall({
                             id: msgId,
                             name: senderName,
-                            url: match[0]
+                            url: match[0],
                         });
                     }
                 }
-            } catch (e) {
-                // Bỏ qua lỗi giải mã
+            } catch {
+
             }
         };
 
-        // Lắng nghe sự kiện từ websocket.ts
         window.addEventListener("GLOBAL_MSG", handleNewMessage);
-
-        // Dọn dẹp khi component unmount
-        return () => window.removeEventListener("GLOBAL_MSG", handleNewMessage);
+        return () =>
+            window.removeEventListener("GLOBAL_MSG", handleNewMessage);
     }, [currentUser]);
 
     const handleReject = () => {
@@ -95,6 +96,7 @@ const App = () => {
 
     return (
         <>
+            <WebSocketLoader />
             {incomingCall && (
                 <IncomingCall
                     callerName={incomingCall.name}
@@ -102,6 +104,7 @@ const App = () => {
                     onReject={handleReject}
                 />
             )}
+
             <Outlet />
         </>
     );

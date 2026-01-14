@@ -1,9 +1,23 @@
 import {store} from "../redux/store";
 import {setUser} from "../features/auth/authSlice";
-import {addHistory, setMessages, setCurrentChat, setHistory, setUserOnline} from "../features/chat/chatSlice";
+import {Message} from "../features/chat/chatTypes"
+import {addHistory, setMessages, setCurrentChat, setHistory, setUserOnline, appendMessage} from "../features/chat/chatSlice";
+import { setConnected } from "../features/websocket/websocketSlice";
+
 
 class WebSocketService {
+    private static instance: WebSocketService;
     private socket: WebSocket | null = null;
+
+    private constructor() {}
+
+    static getInstance() {
+        if (!WebSocketService.instance) {
+            WebSocketService.instance = new WebSocketService();
+        }
+        return WebSocketService.instance;
+    }
+
     private reconnectTimer: any = null;
 
     private onRegisterSuccess?: (msg: string) => void;
@@ -13,7 +27,6 @@ class WebSocketService {
     private isLoggedIn = false;
     private isManualLogin = false;
     private tempRegPassword = "";
-    private lastPassword = "";
 
     private checkUserCallback?: (exists: boolean) => void;
     private checkingUser: string | null = null;
@@ -42,6 +55,7 @@ class WebSocketService {
 
         this.socket.onopen = () => {
             console.log("[WS] Connected");
+            store.dispatch(setConnected(true));
 
             if (this.isManualLogin) return;
 
@@ -73,7 +87,9 @@ class WebSocketService {
                     this.onRegisterSuccess?.("Đăng ký thành công");
                 } else {
                     this.isManualLogin = false;
-                    this.onRegisterError?.(res.mes);
+                    if (res.mes === "User already exists!") this.onRegisterError?.("Tài khoản đã tồn tại!");
+                    if (res.mes === "Username containt whitespace") this.onRegisterError?.("Tài khoản không được chứa khoảng trắng!");
+                    if (res.mes === "Username contain special character!") this.onRegisterError?.("Tài khoản không được chứa kí tự đặc biệt!");
                 }
                 return;
             }
@@ -127,11 +143,20 @@ class WebSocketService {
                 return;
             }
 
-            if ((res.event === "CREATE_ROOM" || res.event === "JOIN_ROOM") && res.status === "success") {
-                const roomName = res.data.name;
-                if (roomName) {
-                    store.dispatch(addHistory({name: roomName, type: 1}));
-                    store.dispatch(setCurrentChat({name: roomName, type: 1}));
+            if (res.event === "CREATE_ROOM" || res.event === "JOIN_ROOM") {
+
+                if (res.status === "error") {
+                    alert(res.mes);
+                    return;
+                }
+
+                if (res.status === "success") {
+                    const roomName = res.data.name;
+                    if (roomName) {
+                        store.dispatch(addHistory({name: roomName, type: 1}));
+                        store.dispatch(setCurrentChat({name: roomName, type: 1}));
+                    }
+                    wsService.getRoomChatMess(roomName, 1);
                 }
             }
 
@@ -141,18 +166,37 @@ class WebSocketService {
                 this.checkUserCallback = undefined;
             }
 
-            if (
-                (res.event === "GET_PEOPLE_CHAT_MES" ||
-                    res.event === "GET_ROOM_CHAT_MES") &&
-                res.status === "success"
-            ) {
-                const listMessages = Array.isArray(res.data) ? res.data : [];
+            if (res.status !== "success") return;
 
-                store.dispatch(setMessages([...listMessages].reverse()));
+            if (res.event === "GET_PEOPLE_CHAT_MES") {
+                if (!Array.isArray(res.data)) return;
+
+                const normalized = res.data.sort(
+                    (a: Message, b: Message) =>
+                        new Date(a.createAt ?? 0).getTime() -
+                        new Date(b.createAt ?? 0).getTime()
+                );
+                store.dispatch(setMessages(normalized));
+            }
+
+            if (res.event === "GET_ROOM_CHAT_MES") {
+                if (!res.data?.chatData || !Array.isArray(res.data.chatData)) return;
+
+                const normalized = res.data.chatData.sort(
+                    (a: Message, b: Message) =>
+                        new Date(a.createAt ?? 0).getTime() -
+                        new Date(b.createAt ?? 0).getTime()
+                );
+                store.dispatch(setMessages(normalized));
             }
 
             if (res.event === "GET_USER_LIST" && res.status === "success") {
-                store.dispatch(setHistory(res.data));
+                const username = localStorage.getItem("USERNAME");
+
+                const filtered = (res.data || []).filter(
+                    (u: any) => u.name !== username
+                );
+                store.dispatch(setHistory(filtered));
             }
 
             if (res.event === "CHECK_USER_ONLINE" && res.status === "success") {
@@ -163,6 +207,27 @@ class WebSocketService {
                         online: Boolean(res.data.status)
                     })
                 );
+            }
+
+            if (res.event === "SEND_CHAT" && res.status === "success") {
+                const currentChat = store.getState().chat.currentChat;
+                if (!currentChat) return;
+
+                const msg: Message = {
+                    ...res.data,
+                    createAt: new Date().toISOString(),
+                };
+
+                if (
+                    msg.type === 0 &&
+                    (msg.name === currentChat.name || msg.to === currentChat.name)
+                ) {
+                    store.dispatch(appendMessage(msg));
+                }
+
+                if (msg.type === 1 && msg.to === currentChat.name) {
+                    store.dispatch(appendMessage(msg));
+                }
             }
 
             if (res.status === "error") {
@@ -178,10 +243,12 @@ class WebSocketService {
 
         this.socket.onerror = (err) => {
             console.error("[WS] Error", err);
+            store.dispatch(setConnected(false));
         };
 
         this.socket.onclose = () => {
             console.log("[WS] Disconnected");
+            store.dispatch(setConnected(false));
 
             this.socket = null;
             this.isLoggedIn = false;
@@ -197,8 +264,6 @@ class WebSocketService {
     }
 
     login(username: string, password: string) {
-        this.lastPassword = password;
-
         if (this.isLoggedIn && !this.isSilentLogin) return;
 
         this.isManualLogin = !this.isSilentLogin;
@@ -271,6 +336,18 @@ class WebSocketService {
 
     sendChat(type: "people" | "room", to: string, mes: string) {
         if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
+
+        const name = localStorage.getItem("USERNAME") || "";
+
+        const localMsg = {
+            type,
+            name,
+            to,
+            mes,
+            createAt: new Date().toISOString(),
+        };
+
+        store.dispatch(appendMessage(localMsg));
 
         this.socket.send(JSON.stringify({
             action: "onchat",
@@ -379,4 +456,4 @@ class WebSocketService {
     }
 }
 
-export const wsService = new WebSocketService();
+export const wsService = WebSocketService.getInstance();

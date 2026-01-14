@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Video, Phone } from "lucide-react";
 
@@ -43,6 +44,34 @@ export const ChatWindow = () => {
         navigate(`/call/${roomId}?mode=${mode}`);
     };
 
+    const formatChatTime = (dateStr: string) => {
+        const date = new Date(dateStr.replace(" ", "T"));
+        const now = new Date();
+
+        const isToday =
+            date.getDate() === now.getDate() &&
+            date.getMonth() === now.getMonth() &&
+            date.getFullYear() === now.getFullYear();
+
+        const time = date.toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+        });
+
+        if (isToday) return time;
+
+        const day = date.toLocaleDateString("en-GB");
+        return `${time} ${day}`;
+    };
+
+    const chatBodyRef = useRef<HTMLDivElement | null>(null);
+
+    useEffect(() => {
+        const el = chatBodyRef.current;
+        if (!el) return;
+        el.scrollTop = el.scrollHeight;
+    }, [messages]);
+
     if (!currentChat) {
         return (
             <div className="chat-window empty">
@@ -80,32 +109,48 @@ export const ChatWindow = () => {
                 </div>
             </div>
 
-            <div className="chat-body">
-                {(messages || []).map((m, i) => (
-                    <div
-                        key={i}
-                        className={`message ${
-                            m.name === username ? "me" : ""
-                        }`}
-                    >
-                        {isImageUrl(m.mes) ? (
-                            <img
-                                src={m.mes}
-                                alt="sent"
-                                className="chat-image"
-                                onClick={() => window.open(m.mes, "_blank")}
-                            />
-                        ) : isVideoUrl(m.mes) ? (
-                            <video
-                                src={m.mes}
-                                controls
-                                className="chat-video"
-                            />
-                        ) : (
-                            <ChatMessage mes={m.mes} />
-                        )}
-                    </div>
-                ))}
+            <div className="chat-body" ref={chatBodyRef}>
+                {(messages || []).map((m, i) => {
+                    const isMe = m.name === username;
+
+                    return (
+                        <div
+                            key={i}
+                            className={`message ${isMe ? "me" : ""}`}
+                        >
+                            <div className="bubble-wrapper">
+                                {!isMe && (
+                                    <div className="sender-name">
+                                        {m.name}
+                                    </div>
+                                )}
+
+                                <div className="bubble">
+                                    {isImageUrl(m.mes) ? (
+                                        <img
+                                            src={m.mes}
+                                            alt="sent"
+                                            className="chat-image"
+                                            onClick={() => window.open(m.mes, "_blank")}
+                                        />
+                                    ) : isVideoUrl(m.mes) ? (
+                                        <video
+                                            src={m.mes}
+                                            controls
+                                            className="chat-video"
+                                        />
+                                    ) : (
+                                        <ChatMessage mes={m.mes} />
+                                    )}
+                                </div>
+
+                                <div className="time">
+                                    {formatChatTime(m.createAt!)}
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
 
             <ChatInput />
