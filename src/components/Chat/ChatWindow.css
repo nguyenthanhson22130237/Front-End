@@ -46,12 +46,12 @@
 }
 
 .call-btn.voice {
-    background-color: #e0f2f1;
-    color: #007a8c;
+    background-color: #6b4eff;
+    color: white;
 }
 
 .call-btn.video {
-    background-color: #007a8c;
+    background-color: #6b4eff;
     color: white;
 }
 

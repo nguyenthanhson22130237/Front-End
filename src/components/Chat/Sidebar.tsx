@@ -79,7 +79,7 @@ export const Sidebar = () => {
                      onChange={(e) => setRoomInput(e.target.value)}/>
 
                 <div className="room-actions">
-                    <label>
+                    <label className="room-label">
                         <input
                             type="checkbox"
                             checked={createMode}
