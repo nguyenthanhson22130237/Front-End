@@ -1,20 +1,20 @@
-import { useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
-import { Video, Phone } from "lucide-react";
+import {useEffect, useRef} from "react";
+import {useNavigate} from "react-router-dom";
+import {Video, Phone} from "lucide-react";
 
-import { ChatInput } from "./ChatInput";
-import { useAppSelector } from "../../redux/hooks";
-import { RootState } from "../../redux/store";
-import { ChatMessage } from "./ChatMessage";
-import { isImageUrl, isVideoUrl } from "../../services/uploadService";
-import { wsService } from "../../services/websocket";
+import {ChatInput} from "./ChatInput";
+import {useAppSelector} from "../../redux/hooks";
+import {RootState} from "../../redux/store";
+import {ChatMessage} from "./ChatMessage";
+import {isImageUrl, isVideoUrl} from "../../services/uploadService";
+import {wsService} from "../../services/websocket";
 
 import "./ChatWindow.css";
 
 export const ChatWindow = () => {
     const navigate = useNavigate();
 
-    const { currentChat, messages } = useAppSelector(
+    const {currentChat, messages} = useAppSelector(
         (state: RootState) => state.chat
     );
 
@@ -44,6 +44,22 @@ export const ChatWindow = () => {
         navigate(`/call/${roomId}?mode=${mode}`);
     };
 
+    const decodeMes = (mes: string) => {
+        try {
+            return decodeURIComponent(escape(atob(mes)));
+        } catch {
+            return mes;
+        }
+    };
+
+    const isSticker = (mes: string) => {
+        return mes.startsWith("sticker::");
+    };
+
+    const getStickerUrl = (mes: string) => {
+        return mes.replace("sticker::", "");
+    };
+
     const formatChatTime = (dateStr: string) => {
         const date = new Date(dateStr.replace(" ", "T"));
         const now = new Date();
@@ -66,10 +82,14 @@ export const ChatWindow = () => {
 
     const chatBodyRef = useRef<HTMLDivElement | null>(null);
 
-    useEffect(() => {
+    const scrollToBottom = () => {
         const el = chatBodyRef.current;
         if (!el) return;
         el.scrollTop = el.scrollHeight;
+    };
+
+    useEffect(() => {
+        scrollToBottom();
     }, [messages]);
 
     if (!currentChat) {
@@ -96,7 +116,7 @@ export const ChatWindow = () => {
                         onClick={() => handleCall(false)}
                         title="Gọi thoại"
                     >
-                        <Phone size={18} />
+                        <Phone size={18}/>
                     </button>
 
                     <button
@@ -104,7 +124,7 @@ export const ChatWindow = () => {
                         onClick={() => handleCall(true)}
                         title="Gọi video"
                     >
-                        <Video size={18} />
+                        <Video size={18}/>
                     </button>
                 </div>
             </div>
@@ -112,6 +132,7 @@ export const ChatWindow = () => {
             <div className="chat-body" ref={chatBodyRef}>
                 {(messages || []).map((m, i) => {
                     const isMe = m.name === username;
+                    const decodedMes = decodeMes(m.mes);
 
                     return (
                         <div
@@ -126,7 +147,14 @@ export const ChatWindow = () => {
                                 )}
 
                                 <div className="bubble">
-                                    {isImageUrl(m.mes) ? (
+                                    {isSticker(decodedMes) ? (
+                                        <img
+                                            src={getStickerUrl(decodedMes)}
+                                            alt="sticker"
+                                            style={{width: 70}}
+                                            onLoad={() => scrollToBottom()}
+                                        />
+                                    ) : isImageUrl(m.mes) ? (
                                         <img
                                             src={m.mes}
                                             alt="sent"
@@ -140,7 +168,7 @@ export const ChatWindow = () => {
                                             className="chat-video"
                                         />
                                     ) : (
-                                        <ChatMessage mes={m.mes} />
+                                        <ChatMessage mes={m.mes}/>
                                     )}
                                 </div>
 
@@ -152,8 +180,7 @@ export const ChatWindow = () => {
                     );
                 })}
             </div>
-
-            <ChatInput />
+            <ChatInput/>
         </div>
     );
 };

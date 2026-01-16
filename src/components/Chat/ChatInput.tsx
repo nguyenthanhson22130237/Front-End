@@ -1,15 +1,17 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
-import { Send, Image as ImageIcon, Film } from "lucide-react";
+import { Send, Image as ImageIcon, Film, Sticker } from "lucide-react";
 import { wsService } from "../../services/websocket";
 import { useAppSelector } from "../../redux/hooks";
 import { uploadToCloudinary } from "../../services/uploadService";
+import { getStickers } from "../../services/StickerService";
 // @ts-ignore
 import styles from "./ChatInput.module.css";
 
 export const ChatInput = () => {
     const [message, setMessage] = useState("");
     const [showEmoji, setShowEmoji] = useState(false);
+    const [showSticker, setShowSticker] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -60,13 +62,50 @@ export const ChatInput = () => {
         }
     };
 
+    const [stickers, setStickers] = useState<any[]>([]);
+
+    useEffect(() => {
+        if (showSticker) {
+            getStickers().then(setStickers);
+        }
+    }, [showSticker]);
+
     return (
         <div className={styles.wrapper}>
+            <button
+                type="button"
+                className={styles.stickerBtn}
+                onClick={() => {
+                    setShowEmoji(false);
+                    setShowSticker(prev => !prev);
+                }}
+            >
+                <Sticker color="#007a8c" size={24}/>
+            </button>
+            {showSticker && (
+                <div className={styles.stickerPicker}>
+                    {stickers.map(sticker => (
+                        <img
+                            key={sticker.id}
+                            src={sticker.images.fixed_height.url}
+                            className={styles.stickerItem}
+                            onClick={() => {
+                                send(`sticker::${sticker.images.original.url}`);
+                                setShowSticker(false);
+                            }}
+                        />
+                    ))}
+                </div>
+            )}
+
             {/*Emoji button*/}
             <button
                 type="button"
                 className={styles.emojiBtn}
-                onClick={() => setShowEmoji(prev => !prev)}
+                onClick={() => {
+                    setShowSticker(false);
+                    setShowEmoji(prev => !prev)
+                }}
             >
                 😊
             </button>
