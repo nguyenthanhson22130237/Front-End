@@ -6,39 +6,43 @@ import { WebSocketLoader } from "./components/WebSocketLoader";
 
 const App = () => {
     const [incomingCall, setIncomingCall] = useState<{
+        id: string;
         name: string;
         url: string;
-        id: string;
     } | null>(null);
 
     const currentUser = localStorage.getItem("USERNAME");
 
-    // Lưu các message ID đã xử lý (chống popup lặp)
+    const hasConnectedRef = useRef(false);
+
     const processedIdsRef = useRef<Set<string>>(new Set());
 
     useEffect(() => {
+        if (hasConnectedRef.current) return;
+        hasConnectedRef.current = true;
+
         wsService.connect();
+
     }, []);
 
     useEffect(() => {
         const handleNewMessage = (event: any) => {
-            const payload = event.detail;
-            if (!payload) return;
+            if (incomingCall) return;
 
-            if (payload.event !== "SEND_CHAT" || !payload.data) return;
+            const payload = event.detail;
+            if (!payload || payload.event !== "SEND_CHAT") return;
 
             const msg = payload.data;
+            if (!msg) return;
 
             const msgId =
                 msg._id ||
                 msg.id ||
                 `${msg.sender}_${msg.createdAt || Date.now()}`;
 
-            // Chống xử lý trùng
             if (processedIdsRef.current.has(msgId)) return;
             if (sessionStorage.getItem(`call_processed_${msgId}`)) return;
 
-            // Chống cuộc gọi cũ
             const msgTimeStr =
                 msg.createdAt || msg.timestamp || msg.created_at;
             if (msgTimeStr) {
@@ -46,49 +50,40 @@ const App = () => {
                 if (Date.now() - msgTime > 60000) return;
             }
 
-            const rawContent = msg.content || msg.mes || msg.message || "";
+            const rawContent = msg.content || msg.mes || msg.message;
             const senderName =
-                msg.sender || msg.name || msg.username || "";
+                msg.sender || msg.name || msg.username;
 
-            if (!rawContent) return;
+            if (!rawContent || senderName === currentUser) return;
 
+            let decodedContent = "";
             try {
-                const decodedContent = decodeURIComponent(
-                    escape(atob(rawContent))
-                );
-
-                if (
-                    decodedContent.includes("/call/call_") &&
-                    senderName !== currentUser
-                ) {
-                    const urlRegex = /(http[s]?:\/\/[^\s]+)/g;
-                    const match = decodedContent.match(urlRegex);
-
-                    if (match) {
-                        console.log("CÓ CUỘC GỌI MỚI:", senderName);
-
-                        processedIdsRef.current.add(msgId);
-                        sessionStorage.setItem(
-                            `call_processed_${msgId}`,
-                            "true"
-                        );
-
-                        setIncomingCall({
-                            id: msgId,
-                            name: senderName,
-                            url: match[0],
-                        });
-                    }
-                }
+                decodedContent = atob(rawContent);
             } catch {
-
+                return;
             }
+
+            if (!decodedContent.includes("/call/call_")) return;
+
+            const urlMatch = decodedContent.match(/https?:\/\/[^\s]+/);
+            if (!urlMatch) return;
+
+            console.log("INCOMING CALL:", senderName);
+
+            processedIdsRef.current.add(msgId);
+            sessionStorage.setItem(`call_processed_${msgId}`, "true");
+
+            setIncomingCall({
+                id: msgId,
+                name: senderName,
+                url: urlMatch[0],
+            });
         };
 
         window.addEventListener("GLOBAL_MSG", handleNewMessage);
         return () =>
             window.removeEventListener("GLOBAL_MSG", handleNewMessage);
-    }, [currentUser]);
+    }, [currentUser, incomingCall]);
 
     const handleReject = () => {
         setIncomingCall(null);
@@ -97,6 +92,7 @@ const App = () => {
     return (
         <>
             <WebSocketLoader />
+
             {incomingCall && (
                 <IncomingCall
                     callerName={incomingCall.name}
