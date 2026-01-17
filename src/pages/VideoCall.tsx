@@ -21,7 +21,7 @@ export const VideoCall = () => {
     const userId = username + "_" + Date.now();
 
     const handleLeave = () => {
-        navigate(-1);
+        navigate("/chat", { replace: true });
     };
 
     useEffect(() => {
