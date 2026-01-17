@@ -30,8 +30,8 @@ export const ChatWindow = () => {
         const callUrl = `${window.location.origin}/call/${roomId}?mode=${mode}`;
 
         const msgContent = isVideoCall
-            ? `Cuộc gọi Video`
-            : `Cuộc gọi Thoại`;
+            ? `Đang gọi Video...\nBấm vào link để nghe: ${callUrl}`
+            : `Đang gọi Thoại...\nBấm vào link để nghe: ${callUrl}`;
 
         // @ts-ignore
         const type = currentChat.type === 1 ? "room" : "people";
